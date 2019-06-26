@@ -18,7 +18,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-g", "--gpus", type=int, default=1,
     help="# of GPUs to use for training")
 args = vars(ap.parse_args())
- 
+
 # grab the number of GPUs and store it in a conveience variable
 num_gpu = args["gpus"]
 
@@ -54,15 +54,13 @@ kernel_size = 50
 kernel_size2 = 50
 
 # Paths
-NombreCarpeta = '10Fold'
-base_path = '/mnt/nas2/GrimaRepo/claguirre/Dataset/'
-regular_exp = base_path + 'Subclasses/Corot/**/*.csv'
-regular_exp2 = base_path + 'Subclasses/**/OGLE-*.dat'
-regular_exp3 = base_path + 'Subclasses/VVV/**/*.csv'
-
+NumberOfFiles = '10Fold'
+base_path = os.get_path()
+regular_exp1 = base_path + 'Subclasses/**/OGLE-*.dat'
+regular_exp2 = base_path + 'Subclasses/VVV/**/*.csv'
 
 ## Open Databases
-subclasses = ['cepDiez', 'cepEfe', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg'] 
+subclasses = ['cepDiez', 'cepEfe', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
 # subclasses = ['lpv','cep','rrlyr','ecl']
 
 def get_filename(directory, N, early, activation='relu'):
@@ -72,30 +70,31 @@ def get_filename(directory, N, early, activation='relu'):
         directory += '/sigmoid/'
     else:
         directory += '/tanh/'
-        
+
     if not os.path.exists(directory):
-        print('[+] Creando Directorio \n\t ->', directory)
+        print('[+] Creating Directory \n\t ->', directory)
         os.mkdir(directory)
-        
+
     name = '1) Red ' + str(N)
     directory += '/'
     return directory, name
 
 def get_files(extraRandom = False, permutation=False):
     files1 = np.array(list(glob.iglob(regular_exp, recursive=True)))
-    files2 = np.array(list(glob.iglob(regular_exp2, recursive=True)))    
-    files3 = np.array(list(glob.iglob(regular_exp3, recursive=True)))
-    
+    files2 = np.array(list(glob.iglob(regular_exp2, recursive=True)))
+    #Glob searches for all files that fit the format given in regular_exp1
+    #Then puts them in a list
+
     print('[!] Files in Memory')
-    
+
     # Permutations
     if permutation:
         files1 = files1[np.random.permutation(len(files1))]
         files2 = files2[np.random.permutation(len(files2))]
-        files3 = files3[np.random.permutation(len(files3))]
-        
+
         print('[!] Permutation applied')
-        
+        #Shuffles the arrays
+
     aux_dic = {}
     corot = {}
     vvv = {}
@@ -106,71 +105,67 @@ def get_files(extraRandom = False, permutation=False):
         vvv[subclass] = 0
         ogle[subclass] = 0
 
-        
+
     new_files = []
-    for idx in tqdm(range(len(files2))):
+    for idx in tqdm(range(len(files2))): #tqdm is a progress bar
         foundCorot = False
         foundVista = False
         foundOgle = False
-        
-        for subclass in subclasses:        
-            # Corot
-            if not foundCorot and corot[subclass] < limit and idx < len(files1) and subclass in files1[idx]:
-                new_files += [[files1[idx], 0]]
-                corot[subclass] += 1
-                foundCorot = True
-                    
+
+        for subclass in subclasses:
             # Ogle
-            if not foundOgle and ogle[subclass] < limit and subclass in files2[idx]:
-                new_files += [[files2[idx], 0]]
+            # Limit is max stars of one class taken from survey (default 8000)
+            if not foundOgle and ogle[subclass] < limit and subclass in files1[idx]:
+                new_files += [[files1[idx], 0]]
                 ogle[subclass] += 1
-                foundOgle = True            
-                    
-            # VVV           
-            if not foundVista and vvv[subclass] < limit and idx < len(files3) and subclass in files3[idx]:
-                new_files += [[files3[idx], 0]]
+                foundOgle = True
+
+            # VVV
+            # idx check since VVV has less data than Ogle
+            if not foundVista and vvv[subclass] < limit and idx < len(files2) and subclass in files2[idx]:
+                new_files += [[files2[idx], 0]]
                 vvv[subclass] += 1
-                foundVista = True   
-    
-    del files1, files2, files3
+                foundVista = True
+
+    del files1, files2
 
     print('[!] Loaded Files')
-    
+
     return new_files
 
 
 def replicate_by_survey(files, yTrain):
-        
-    surveys = ["OGLE", "VVV", "Corot"]
-    
+
+    surveys = ["OGLE", "VVV"]
+
     new_files = []
     for s in surveys:
         mask = [ s in i for i in yTrain]
         auxYTrain = yTrain[mask]
-            
+
         new_files += replicate(files[mask])
-    
+
     return new_files
-    
+
 
 def replicate(files):
     aux_dic = {}
     for subclass in subclasses:
         aux_dic[subclass] = []
-    
+
     for file, num in files:
         for subclass in subclasses:
             if subclass in file:
                 aux_dic[subclass].append([file, num])
                 break
-    
+
     new_files = []
     for subclass in subclasses:
         array = aux_dic[subclass]
         length = len(array)
         if length == 0:
             continue
-            
+
         new_files += array
         if length < limit and extraRandom:
                 count = 1
@@ -182,13 +177,11 @@ def replicate(files):
                 r = limit - q*length
                 if r > 1:
                     new_files += [[random.choice(array)[0], count] for i in range(r)]
-      
+
     return new_files
 
 def get_survey(path):
-    if 'Corot' in path:
-        return 'Corot'
-    elif 'VVV' in path:
+    if 'VVV' in path:
         return 'VVV'
     elif 'OGLE' in path:
         return 'OGLE'
@@ -213,7 +206,7 @@ def open_vista(path, num):
     df = df[df.mjd > 0]
     df = df.sort_values(by=[df.columns[1]])
 
-    # 3 Desviaciones Standard
+    # Something related to 3 standard deviations
     #df = df[np.abs(df.mjd-df.mjd.mean())<=(3*df.mjd.std())]
 
     time = np.array(df[df.columns[1]].values, dtype=float)
@@ -225,122 +218,81 @@ def open_vista(path, num):
     time = time[not_nan]
     magnitude = magnitude[not_nan]
     error = error[not_nan]
- 
+
     # Num
     step = random.randint(1, 2)
     count = random.randint(0, num)
-    
-    time = time[::step] 
+
+    time = time[::step]
     magnitude = magnitude[::step]
     error = error[::step]
-    
-    time = time[count:] 
+
+    time = time[count:]
     magnitude = magnitude[count:]
     error = error[count:]
-    
+
     # Get Name of Class
     # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
     # path, folder_name = os.path.split(folder_path)
-    
-    return time.astype('float'), magnitude.astype('float'), error.astype('float')
 
-def open_corot(path, num, n, columns):
-    df = pd.read_csv(path, comment='#', sep=',')
-    df = df[df.DATEBARTT > 0]
-    df = df.sort_values(by=[df.columns[columns[0]]])
-    
-    # 3 Desviaciones Standard
-    #df = df[np.abs(df.mjd-df.mjd.mean())<=(3*df.mjd.std())]
-    
-    time = np.array(df[df.columns[columns[0]]].values, dtype=float)
-    magnitude = np.array(df[df.columns[columns[1]]].values, dtype=float)
-    error = np.array(df[df.columns[columns[2]]].values, dtype=float)
-    
-    # Not Nan
-    not_nan = np.where(~np.logical_or(np.isnan(time), np.isnan(magnitude)))[0]
-    time = time[not_nan]
-    magnitude = magnitude[not_nan]
-    error = error[not_nan]
-    
-    # Num
-    step = random.randint(1, 2)
-    count = random.randint(0, num)
-    
-    time = time[::step] 
-    magnitude = magnitude[::step]
-    error = error[::step]
-    
-    time = time[count:] 
-    magnitude = magnitude[count:]
-    error = error[count:]
-    
-    if len(time) > n:
-        time = time[:n]
-        magnitude = magnitude[:n]
-        error = error[:n]
-        
-    # Get Name of Class
-    # folder_path = os.path.dirname(os.path.dirname(path))
-    # path, folder_name = os.path.split(folder_path)
-    
-    return time, magnitude, error
+    return time.astype('float'), magnitude.astype('float'), error.astype('float')
 
 def open_ogle(path, num, n, columns):
     df = pd.read_csv(path, comment='#', sep='\s+', header=None)
     df.columns = ['a','b','c']
     df = df[df.a > 0]
     df = df.sort_values(by=[df.columns[columns[0]]])
-    
+
     # Erase duplicates if it exist
     df.drop_duplicates(subset='a', keep='first')
-    
+
     # 3 Desviaciones Standard
     #df = df[np.abs(df.mjd-df.mjd.mean())<=(3*df.mjd.std())]
-    
+
     time = np.array(df[df.columns[columns[0]]].values, dtype=float)
     magnitude = np.array(df[df.columns[columns[1]]].values, dtype=float)
     error = np.array(df[df.columns[columns[2]]].values, dtype=float)
-    
+
     # Not Nan
     not_nan = np.where(~np.logical_or(np.isnan(time), np.isnan(magnitude)))[0]
     time = time[not_nan]
     magnitude = magnitude[not_nan]
     error = error[not_nan]
-    
+
     # Num
     step = random.randint(1, 2)
     count = random.randint(0, num)
-    
-    time = time[::step] 
+
+    time = time[::step]
     magnitude = magnitude[::step]
     error = error[::step]
-    
-    time = time[count:] 
+
+    time = time[count:]
     magnitude = magnitude[count:]
     error = error[count:]
-    
-    
+
+
     if len(time) > n:
         time = time[:n]
         magnitude = magnitude[:n]
         error = error[:n]
-        
+
     # Get Name of Class
     # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
     # path, folder_name = os.path.split(folder_path)
-    
+
     return time, magnitude, error
 
 # Data has the form (Points,(Delta Time, Mag, Error)) 1D
 def create_matrix(data, N):
     aux = np.append([0], np.diff(data).flatten())
 
-    # Padding with cero
+    # Padding with zero if aux is not long enough
     if max(N-len(aux),0) > 0:
-        aux = np.append(aux, [0]*(N-len(aux)))    
+        aux = np.append(aux, [0]*(N-len(aux)))
 
     return np.array(aux[:N], dtype='float').reshape(-1,1)
-    
+
 def dataset(files, N):
     input_1 = []
     input_2 = []
@@ -350,12 +302,7 @@ def dataset(files, N):
         num = int(num)
         t, m, e, c, s = None, None, None, get_name(file), get_survey(file)
         if c in subclasses:
-            if 'Corot' in file:
-                if 'EN2_STAR_CHR' in file:
-                    t, m, e = open_corot(file, num, N, [0,4,8])
-                else:
-                    t, m, e = open_corot(file, num, N, [0,1,2])
-            elif 'VVV' in file:
+            if 'VVV' in file:
                 t, m, e = open_vista(file, num)
             elif 'OGLE' in file:
                 t, m, e = open_ogle(file, num, N, [0,1,2])
@@ -365,9 +312,9 @@ def dataset(files, N):
                 yClassTrain.append(c)
                 survey.append(s)
             else:
-                print('\t [!] E2 No paso el archivo: ', file, '\n\t\t - Clase: ',  c)
+                print('\t [!] E2 File not passed: ', file, '\n\t\t - Class: ',  c)
         else:
-            print('\t [!] E1 No paso el archivo: ', file, '\n\t\t - Clase: ',  c)
+            print('\t [!] E1 File not passed: ', file, '\n\t\t - Class: ',  c)
     return np.array(input_1), np.array(input_2), np.array(yClassTrain), np.array(survey)
 
 
@@ -389,9 +336,9 @@ def get_model(N, classes, activation='relu'):
     out = Concatenate()([out1, out2])
     out = Flatten()(out)
     out = Dropout(dropout)(out)
-    out = Dense(hidden_dims, activation=activation)(out)   
+    out = Dense(hidden_dims, activation=activation)(out)
     out = Dropout(dropout)(out)
-    out = Dense(len(classes), activation='softmax')(out)   
+    out = Dense(len(classes), activation='softmax')(out)
 
     model = Model([input1, input2], out)
 
@@ -414,7 +361,7 @@ def serialize_model(name, model):
     model_json = model.to_json()
     with open(name + '.json', "w") as json_file:
         json_file.write(model_json)
-        
+
     # Serialize weights to HDF5
     model.save_weights(name + ".h5")
 
@@ -422,25 +369,25 @@ def experiment(directory, files, Y, classes, N, n_splits):
     # Iterating
     activations = ['tanh']
     earlyStopping = [False]
-    
+
     for early in earlyStopping:
-        for activation in activations:   
+        for activation in activations:
             # try:
             print('\t\t [+] Entrenando',
                   '\n\t\t\t [!] Early Stopping', early,
                   '\n\t\t\t [!] Activation', activation)
 
 
-            direc, name =  get_filename(directory, N, 
-                                        early, activation) 
+            direc, name =  get_filename(directory, N,
+                                        early, activation)
             filename_exp = direc + name
-            yPred = np.array([]) 
-            yReal = np.array([]) 
+            yPred = np.array([])
+            yReal = np.array([])
             sReal = np.array([])
 
             modelNum = 0
             skf = StratifiedKFold(n_splits=n_splits)
-            for train_index, test_index in skf.split(files, Y):                           
+            for train_index, test_index in skf.split(files, Y):
                 dTrain, dTest = files[train_index], files[test_index]
                 yTrain = Y[train_index]
 
@@ -449,7 +396,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
                 ##############
 
                 # Replicate Files
-                dTrain = replicate_by_survey(dTrain, yTrain) 
+                dTrain = replicate_by_survey(dTrain, yTrain)
 
                 # Get Database
                 dTrain_1, dTrain_2, yTrain, _ = dataset(dTrain, N)
@@ -464,16 +411,16 @@ def experiment(directory, files, Y, classes, N, n_splits):
                 ## Tensorboard #
                 ################
 
-                tensorboard = TensorBoard(log_dir= direc + 'logs', 
+                tensorboard = TensorBoard(log_dir= direc + 'logs',
                                           write_graph=True, write_images=False)
 
                 ################
                 ##    Model   ##
-                ################    
+                ################
 
                 callbacks = [tensorboard]
                 if early:
-                    earlyStopping = EarlyStopping(monitor='val_loss', patience=3, 
+                    earlyStopping = EarlyStopping(monitor='val_loss', patience=3,
                                                   verbose=0, mode='auto')
                     callbacks.append(earlyStopping)
 
@@ -482,18 +429,18 @@ def experiment(directory, files, Y, classes, N, n_splits):
                     model = get_model(N, classes, activation)
                 else:
                     print("[!] Training with", str(num_gpu), "GPUs")
-                 
+
                     # We'll store a copy of the model on *every* GPU and then combine
                     # the results from the gradient updates on the CPU
                     with tf.device("/cpu:0"):
                         model = get_model(N, classes, activation)
-                    
+
                     # Make the model parallel
                     model = multi_gpu_model(model, gpus=num_gpu)
 
                 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-                model.fit([dTrain_1, dTrain_2], yTrain, 
-                          batch_size=batch_size * num_gpu, epochs=epochs, 
+                model.fit([dTrain_1, dTrain_2], yTrain,
+                          batch_size=batch_size * num_gpu, epochs=epochs,
                           validation_split=validation_set, verbose=1,
                           callbacks=callbacks)
 
@@ -501,7 +448,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
 
                 #################
                 ##  Serialize  ##
-                #################      
+                #################
 
                 modelDirectory = direc + 'model/'
                 if not os.path.exists(modelDirectory):
@@ -516,7 +463,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
 
             yPred = np.array([classes[int(i)]  for i in yPred])
 
-            # Save Matrix       
+            # Save Matrix
             print('\n \t\t\t [+] Saving Results in', filename_exp)
             np.save(filename_exp, [yReal, yPred, sReal])
             print('*'*30)
@@ -529,15 +476,15 @@ YSubClass = []
 for file, num in files:
     YSubClass.append(get_name_with_survey(file))
 YSubClass = np.array(YSubClass)
-    
+
 NUMBER_OF_POINTS = 500
 while NUMBER_OF_POINTS <= MAX_NUMBER_OF_POINTS:
-    
+
     # Create Folder
-    directory = './Resultados' + NombreCarpeta
+    directory = './Results' + NumberOfFiles
     if not os.path.exists(directory):
         print('[+] Creando Directorio \n\t ->', directory)
         os.mkdir(directory)
-    
+
     experiment(directory, files, YSubClass, subclasses, NUMBER_OF_POINTS, n_splits)
     NUMBER_OF_POINTS += step
