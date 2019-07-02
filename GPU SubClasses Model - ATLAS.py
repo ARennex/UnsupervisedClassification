@@ -55,13 +55,15 @@ kernel_size2 = 50
 
 # Paths
 NumberOfFiles = '10Fold'
-base_path = os.get_path()
+base_path = os.get_path() #TODO Go up two steps and put the data there
+#regular_exp1 = base_path + '/**/phot/I/OGLE-*.dat'
 regular_exp1 = base_path + 'Subclasses/**/OGLE-*.dat'
-regular_exp2 = base_path + 'Subclasses/VVV/**/*.csv'
+regular_exp2 = base_path + 'Subclasses/ATLAS/**/*.csv'
+#regular_exp3 = base_path + 'Subclasses/VVV/**/*.csv'
 
 ## Open Databases
-subclasses = ['cepDiez', 'cepEfe', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
-# subclasses = ['lpv','cep','rrlyr','ecl']
+#subclasses = ['cep10', 'cepF', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
+subclasses = ['lpv','cep','rrlyr','ecl']
 
 def get_filename(directory, N, early, activation='relu'):
     if activation == 'relu':
@@ -80,8 +82,9 @@ def get_filename(directory, N, early, activation='relu'):
     return directory, name
 
 def get_files(extraRandom = False, permutation=False):
-    files1 = np.array(list(glob.iglob(regular_exp, recursive=True)))
+    files1 = np.array(list(glob.iglob(regular_exp1, recursive=True)))
     files2 = np.array(list(glob.iglob(regular_exp2, recursive=True)))
+    #files3 = np.array(list(glob.iglob(regular_exp3, recursive=True)))
     #Glob searches for all files that fit the format given in regular_exp1
     #Then puts them in a list
 
@@ -91,26 +94,27 @@ def get_files(extraRandom = False, permutation=False):
     if permutation:
         files1 = files1[np.random.permutation(len(files1))]
         files2 = files2[np.random.permutation(len(files2))]
+        #files3 = files3[np.random.permutation(len(files3))]
 
         print('[!] Permutation applied')
         #Shuffles the arrays
 
     aux_dic = {}
-    corot = {}
-    vvv = {}
     ogle = {}
+    ATLAS = {}
+    #vvv = {}
     for subclass in subclasses:
         aux_dic[subclass] = []
-        corot[subclass] = 0
-        vvv[subclass] = 0
         ogle[subclass] = 0
+        ATLAS[subclass] = 0
+        #vvv[subclass] = 0
 
 
     new_files = []
     for idx in tqdm(range(len(files2))): #tqdm is a progress bar
-        foundCorot = False
-        foundVista = False
         foundOgle = False
+        foundATLAS = False
+        #foundVista = False
 
         for subclass in subclasses:
             # Ogle
@@ -120,13 +124,20 @@ def get_files(extraRandom = False, permutation=False):
                 ogle[subclass] += 1
                 foundOgle = True
 
+            # ATLAS
+            if not foundATLAS and ATLAS[subclass] < limit and idx < len(files2) and subclass in files3[idx]:
+                new_files += [[files2[idx], 0]]
+                ATLAS[subclass] += 1
+                foundATLAS = True
+
             # VVV
             # idx check since VVV has less data than Ogle
-            if not foundVista and vvv[subclass] < limit and idx < len(files2) and subclass in files2[idx]:
-                new_files += [[files2[idx], 0]]
-                vvv[subclass] += 1
-                foundVista = True
+            #if not foundVista and vvv[subclass] < limit and idx < len(files2) and subclass in files2[idx]:
+            #    new_files += [[files2[idx], 0]]
+            #    vvv[subclass] += 1
+            #    foundVista = True
 
+    #del files1, files2, files3
     del files1, files2
 
     print('[!] Loaded Files')
@@ -136,7 +147,7 @@ def get_files(extraRandom = False, permutation=False):
 
 def replicate_by_survey(files, yTrain):
 
-    surveys = ["OGLE", "VVV"]
+    surveys = ["OGLE", "VVV", "ATLAS"]
 
     new_files = []
     for s in surveys:
@@ -370,6 +381,8 @@ def experiment(directory, files, Y, classes, N, n_splits):
     activations = ['tanh']
     earlyStopping = [False]
 
+    #Iterate over the activation functions, but only tanh is used where
+    #Since it obtained the best results
     for early in earlyStopping:
         for activation in activations:
             # try:
@@ -377,7 +390,10 @@ def experiment(directory, files, Y, classes, N, n_splits):
                   '\n\t\t\t [!] Early Stopping', early,
                   '\n\t\t\t [!] Activation', activation)
 
-
+            #Retreives directory name which includes the activation func,
+            #Creates one chosen activation func if it doesn't exist
+            #name var = "1) Red" + N
+            #N is the number of points
             direc, name =  get_filename(directory, N,
                                         early, activation)
             filename_exp = direc + name
