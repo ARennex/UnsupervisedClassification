@@ -55,9 +55,9 @@ kernel_size2 = 50
 
 # Paths
 NumberOfFiles = '10Fold'
-base_path = os.get_path() #TODO Go up two steps and put the data there
+base_path = "C:\\Users\\Aaron\\Documents"
 #regular_exp1 = base_path + '/**/phot/I/OGLE-*.dat'
-regular_exp1 = base_path + 'Subclasses/**/OGLE-*.dat'
+regular_exp1 = base_path + 'OGLE/**/phot/I/OGLE-*.dat'
 regular_exp2 = base_path + 'Subclasses/ATLAS/**/*.csv'
 #regular_exp3 = base_path + 'Subclasses/VVV/**/*.csv'
 
@@ -125,15 +125,15 @@ def get_files(extraRandom = False, permutation=False):
                 foundOgle = True
 
             # ATLAS
-            if not foundATLAS and ATLAS[subclass] < limit and idx < len(files2) and subclass in files3[idx]:
+            if not foundATLAS and ATLAS[subclass] < limit and subclass in files2[idx]:
                 new_files += [[files2[idx], 0]]
                 ATLAS[subclass] += 1
                 foundATLAS = True
 
             # VVV
             # idx check since VVV has less data than Ogle
-            #if not foundVista and vvv[subclass] < limit and idx < len(files2) and subclass in files2[idx]:
-            #    new_files += [[files2[idx], 0]]
+            #if not foundVista and vvv[subclass] < limit and idx < len(files3) and subclass in files3[idx]:
+            #    new_files += [[files3[idx], 0]]
             #    vvv[subclass] += 1
             #    foundVista = True
 
@@ -249,6 +249,52 @@ def open_vista(path, num):
     return time.astype('float'), magnitude.astype('float'), error.astype('float')
 
 def open_ogle(path, num, n, columns):
+    df = pd.read_csv(path, comment='#', sep='\s+', header=None)
+    df.columns = ['a','b','c']
+    df = df[df.a > 0]
+    df = df.sort_values(by=[df.columns[columns[0]]])
+
+    # Erase duplicates if it exist
+    df.drop_duplicates(subset='a', keep='first')
+
+    # 3 Desviaciones Standard
+    #df = df[np.abs(df.mjd-df.mjd.mean())<=(3*df.mjd.std())]
+
+    time = np.array(df[df.columns[columns[0]]].values, dtype=float)
+    magnitude = np.array(df[df.columns[columns[1]]].values, dtype=float)
+    error = np.array(df[df.columns[columns[2]]].values, dtype=float)
+
+    # Not Nan
+    not_nan = np.where(~np.logical_or(np.isnan(time), np.isnan(magnitude)))[0]
+    time = time[not_nan]
+    magnitude = magnitude[not_nan]
+    error = error[not_nan]
+
+    # Num
+    step = random.randint(1, 2)
+    count = random.randint(0, num)
+
+    time = time[::step]
+    magnitude = magnitude[::step]
+    error = error[::step]
+
+    time = time[count:]
+    magnitude = magnitude[count:]
+    error = error[count:]
+
+
+    if len(time) > n:
+        time = time[:n]
+        magnitude = magnitude[:n]
+        error = error[:n]
+
+    # Get Name of Class
+    # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
+    # path, folder_name = os.path.split(folder_path)
+
+    return time, magnitude, error
+
+def open_atlas(path, num, n, columns):
     df = pd.read_csv(path, comment='#', sep='\s+', header=None)
     df.columns = ['a','b','c']
     df = df[df.a > 0]
