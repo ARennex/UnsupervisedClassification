@@ -3,7 +3,7 @@ from keras.callbacks import EarlyStopping, TensorBoard
 from keras.layers import Input, Concatenate, Conv1D
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.models import Model
-from keras.utils.training_utils import multi_gpu_model
+from keras.utils import multi_gpu_model
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from tqdm import tqdm
@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import glob, os, random
 import argparse
+
+from collections import Counter #Count number of objects in each class
 
 # Construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -55,10 +57,11 @@ kernel_size2 = 50
 
 # Paths
 NumberOfFiles = '10Fold'
-base_path = "C:\\Users\\Aaron\\Documents"
-#regular_exp1 = base_path + '/**/phot/I/OGLE-*.dat'
-regular_exp1 = base_path + 'OGLE/**/phot/I/OGLE-*.dat'
-regular_exp2 = base_path + 'Subclasses/ATLAS/**/*.csv'
+base_path = os.getcwd()
+regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
+regular_exp2 = base_path + '/ATLAS/**/Processed Files/*.csv'
+#regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
+#regular_exp2 = base_path + '/ATLAS/**/*.csv'
 #regular_exp3 = base_path + 'Subclasses/VVV/**/*.csv'
 
 ## Open Databases
@@ -111,7 +114,8 @@ def get_files(extraRandom = False, permutation=False):
 
 
     new_files = []
-    for idx in tqdm(range(len(files2))): #tqdm is a progress bar
+    #for idx in tqdm(range(len(files2))): #tqdm is a progress bar
+    for idx in range(len(files2)): #tqdm is a progress bar
         foundOgle = False
         foundATLAS = False
         #foundVista = False
@@ -194,6 +198,8 @@ def replicate(files):
 def get_survey(path):
     if 'VVV' in path:
         return 'VVV'
+    elif 'ATLAS' in path:
+        return 'ATLAS'
     elif 'OGLE' in path:
         return 'OGLE'
     else:
@@ -295,13 +301,22 @@ def open_ogle(path, num, n, columns):
     return time, magnitude, error
 
 def open_atlas(path, num, n, columns):
-    df = pd.read_csv(path, comment='#', sep='\s+', header=None)
-    df.columns = ['a','b','c']
-    df = df[df.a > 0]
+    df = pd.read_csv(path, comment='#', sep=',', header=None)
+    df.columns = ['a','b','c','d','e','f']
+    try:
+        df.b = df.b.astype(float)
+    except Exception as e:
+        print('Crashed while converting files! Crashing line was: ')
+        print(df)
+        print('File Location: ')
+        print(path)
+        exit()
+
+    df = df[df.b > 0]
     df = df.sort_values(by=[df.columns[columns[0]]])
 
     # Erase duplicates if it exist
-    df.drop_duplicates(subset='a', keep='first')
+    df.drop_duplicates(subset='b', keep='first')
 
     # 3 Desviaciones Standard
     #df = df[np.abs(df.mjd-df.mjd.mean())<=(3*df.mjd.std())]
@@ -342,7 +357,12 @@ def open_atlas(path, num, n, columns):
 
 # Data has the form (Points,(Delta Time, Mag, Error)) 1D
 def create_matrix(data, N):
-    aux = np.append([0], np.diff(data).flatten())
+    try:
+        aux = np.append([0], np.diff(data).flatten())
+    except Exception as e:
+        print('Crashed at diff!')
+        print('Value in Data List: ', data)
+        exit()
 
     # Padding with zero if aux is not long enough
     if max(N-len(aux),0) > 0:
@@ -355,7 +375,8 @@ def dataset(files, N):
     input_2 = []
     yClassTrain = []
     survey = []
-    for file, num in tqdm(files):
+    #for file, num in tqdm(files):
+    for file, num in files:
         num = int(num)
         t, m, e, c, s = None, None, None, get_name(file), get_survey(file)
         if c in subclasses:
@@ -363,6 +384,8 @@ def dataset(files, N):
                 t, m, e = open_vista(file, num)
             elif 'OGLE' in file:
                 t, m, e = open_ogle(file, num, N, [0,1,2])
+            elif 'ATLAS' in file:
+                t, m, e = open_atlas(file, num, N, [1,3,4]) #These are the relevant columns in atlas data
             if c in subclasses:
                 input_1.append(create_matrix(t, N))
                 input_2.append(create_matrix(m, N))
@@ -432,7 +455,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
     for early in earlyStopping:
         for activation in activations:
             # try:
-            print('\t\t [+] Entrenando',
+            print('\t\t [+] Training',
                   '\n\t\t\t [!] Early Stopping', early,
                   '\n\t\t\t [!] Activation', activation)
 
@@ -449,6 +472,11 @@ def experiment(directory, files, Y, classes, N, n_splits):
 
             modelNum = 0
             skf = StratifiedKFold(n_splits=n_splits)
+
+            print('files',files)
+            print('Y',Y)
+            print('Y counts', Counter(Y))
+
             for train_index, test_index in skf.split(files, Y):
                 dTrain, dTest = files[train_index], files[test_index]
                 yTrain = Y[train_index]
@@ -514,7 +542,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
 
                 modelDirectory = direc + 'model/'
                 if not os.path.exists(modelDirectory):
-                    print('[+] Creando Directorio \n\t ->', modelDirectory)
+                    print('[+] Creating Directory \n\t ->', modelDirectory)
                     os.mkdir(modelDirectory)
 
                 serialize_model(modelDirectory + str(modelNum), model)
@@ -532,7 +560,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
             # except Exception as e:
             #     print('\t\t\t [!] Fatal Error:\n\t\t', str(e))
 
-print('[+] Obteniendo Filenames')
+print('[+] Getting Filenames')
 files = np.array(get_files(extraRandom, permutation))
 YSubClass = []
 for file, num in files:
@@ -545,7 +573,7 @@ while NUMBER_OF_POINTS <= MAX_NUMBER_OF_POINTS:
     # Create Folder
     directory = './Results' + NumberOfFiles
     if not os.path.exists(directory):
-        print('[+] Creando Directorio \n\t ->', directory)
+        print('[+] Creating Directory \n\t ->', directory)
         os.mkdir(directory)
 
     experiment(directory, files, YSubClass, subclasses, NUMBER_OF_POINTS, n_splits)

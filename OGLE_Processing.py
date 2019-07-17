@@ -96,22 +96,28 @@ def single_object_processor():
 
         #Get list of all files of each type
         files1 = np.array(list(glob.iglob(contents_path, recursive=True)))
-        #print(files1)
 
         for file in files1:
             file_signature = ''.join(c for c in file if c in digits)
-            #print(type(file_signature))
 
             with open(file, 'r') as input_file:
                 index = 0
 
                 for line in input_file:
                     values = line.split(' ')
+                    values = list(filter(None, values))
 
                     if index == 0:
-                        previous_value_time = float(values[0])
-                        previous_value_mag = float(values[1])
-                        index += 1
+                        try:
+                            previous_value_time = float(values[0])
+                            previous_value_mag = float(values[1])
+                            index += 1
+                        except Exception as e:
+                            print(line)
+                            print(line.split(' '))
+                            print(values)
+                            print(file)
+                            exit()
 
                     #To prevent this running for far too long, skip after 50000 objects
                     processed_objects += 1
