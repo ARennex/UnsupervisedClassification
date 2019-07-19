@@ -58,7 +58,7 @@ kernel_size2 = 50
 # Paths
 NumberOfFiles = '10Fold'
 base_path = os.getcwd()
-regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
+regular_exp1 = base_path + '/ogle/**/Processed Files/*.dat'
 regular_exp2 = base_path + '/ATLAS/**/Processed Files/*.csv'
 #regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
 #regular_exp2 = base_path + '/ATLAS/**/*.csv'
@@ -67,6 +67,11 @@ regular_exp2 = base_path + '/ATLAS/**/Processed Files/*.csv'
 ## Open Databases
 #subclasses = ['cep10', 'cepF', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
 subclasses = ['lpv','cep','rrlyr','ecl']
+
+
+#Make some fake classes and new fake data folders with just 0s and stuff to check it works
+#subclasses = ['noise']
+#regular_exp1
 
 def get_filename(directory, N, early, activation='relu'):
     if activation == 'relu':
@@ -91,7 +96,14 @@ def get_files(extraRandom = False, permutation=False):
     #Glob searches for all files that fit the format given in regular_exp1
     #Then puts them in a list
 
+    print('[!] Print files1 ', regular_exp1, files1)
+
     print('[!] Files in Memory')
+
+    print('[!] Removing Source Files from ATLAS')
+    new_files2 = [ x for x in files2 if "aaronb" in x ]
+    files2 = np.array(new_files2)
+    print(files2 != new_files2)
 
     # Permutations
     if permutation:
@@ -121,6 +133,29 @@ def get_files(extraRandom = False, permutation=False):
         #foundVista = False
 
         for subclass in subclasses:
+
+            #Believe Cepheids may not being counted properly
+            # if subclass == 'cep':
+            #     print('Cepheid Test Print-out:')
+            #     print(ogle[subclass])
+            #     print(ATLAS[subclass])
+            #     print(files1[idx])
+            #     print(files2[idx])
+            try:
+                temp = ogle[subclass] < limit and subclass in files1[idx]
+            except Exception as e:
+                if subclass == 'cep':
+                    print('cepheid goes through')
+                else:
+                    print('this could crash it')
+                    print(files1)
+                    print('subclass: ', subclass)
+                    print(foundOgle)
+                    print(ogle[subclass])
+                    print('length of files 1+2 ?: ', len(files1), len(files2))
+                    print(files1[idx])
+                exit()
+
             # Ogle
             # Limit is max stars of one class taken from survey (default 8000)
             if not foundOgle and ogle[subclass] < limit and subclass in files1[idx]:

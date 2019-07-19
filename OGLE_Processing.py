@@ -4,6 +4,8 @@ import pandas as pd
 import os,glob
 from string import digits
 
+from tqdm import tqdm
+
 def open_ogle(path,columns = [0,1,2]):
 
     if 'cep' in path:
@@ -77,10 +79,10 @@ coords = []
 
 def single_object_processor():
     written_lines = 0
-    max_lines = 1000000
+    max_lines = 100000000
 
     processed_objects = 0
-    max_objects = 30000
+    max_objects = 3000000
 
     types_to_process = ['cep','ecl','rrlyr','lpv']
     #types_to_process = ['cep']
@@ -97,7 +99,9 @@ def single_object_processor():
         #Get list of all files of each type
         files1 = np.array(list(glob.iglob(contents_path, recursive=True)))
 
-        for file in files1:
+        print('Files loaded from: ', files1)
+
+        for file in tqdm(files1): #Added tqdm so I can check the progress
             file_signature = ''.join(c for c in file if c in digits)
 
             with open(file, 'r') as input_file:
@@ -119,10 +123,12 @@ def single_object_processor():
                             print(file)
                             exit()
 
-                    #To prevent this running for far too long, skip after 50000 objects
-                    processed_objects += 1
-                    if processed_objects >= max_objects:
-                        break
+                        #To prevent this running for far too long, skip after 50000 objects
+                        processed_objects += 1
+                        if processed_objects >= max_objects:
+                            print("Over Max Objects")
+                            print('Lines Written: ', written_lines)
+                            break
 
                     #open(single_type_path+'/Processed Files/output_{:08d}.csv'.format(file_signature), 'a')
                     #{num:0>3}
@@ -139,5 +145,6 @@ def single_object_processor():
                         written_lines += 1
                         previous_value_time = float(values[0])
                         previous_value_mag = float(values[1])
+
 
 single_object_processor()
