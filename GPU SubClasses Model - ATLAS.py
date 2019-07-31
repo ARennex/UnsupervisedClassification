@@ -580,6 +580,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
                     model = multi_gpu_model(model, gpus=num_gpu)
 
                 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+                print(batch_size,num_gpu) #Having GPU issues
                 model.fit([dTrain_1, dTrain_2], yTrain,
                           batch_size=batch_size * num_gpu, epochs=epochs,
                           validation_split=validation_set, verbose=1,
