@@ -5,8 +5,10 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.models import Model
 from keras.utils import multi_gpu_model
 
+import tensorflow as tf #Getting tf not defined errors
+
 from sklearn.model_selection import StratifiedKFold, train_test_split
-from tqdm import tqdm
+#from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -23,7 +25,6 @@ args = vars(ap.parse_args())
 
 # grab the number of GPUs and store it in a conveience variable
 num_gpu = args["gpus"]
-
 
 ## Settings
 # Files Setting
@@ -58,8 +59,14 @@ kernel_size2 = 50
 # Paths
 NumberOfFiles = '10Fold'
 base_path = os.getcwd()
-regular_exp1 = base_path + '/ogle/**/Processed Files/*.dat'
-regular_exp2 = base_path + '/ATLAS/**/Processed Files/*.csv'
+
+#Laptop version
+regular_exp1 = base_path + '/Temp/OGLE/**/*.dat'
+regular_exp2 = base_path + '/Temp/ATLAS/**/*.csv'
+
+#regular_exp1 = base_path + '/OGLE/**/Processed Files/*.dat'
+#regular_exp2 = base_path + '/ATLAS/**/Processed Files/*.csv'
+
 #regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
 #regular_exp2 = base_path + '/ATLAS/**/*.csv'
 #regular_exp3 = base_path + 'Subclasses/VVV/**/*.csv'
@@ -114,6 +121,24 @@ def get_files(extraRandom = False, permutation=False):
         print('[!] Permutation applied')
         #Shuffles the arrays
 
+    #Count the number of ogle cepheids in files1:
+    ogle_count = {}
+    for subclass in subclasses:
+        ogle_count[subclass] = 0
+    for ogle_file in files1:
+        if 'cep' in ogle_file:
+            ogle_count['cep'] += 1
+        elif 'rrlyr' in ogle_file:
+            ogle_count['rrlyr'] += 1
+        elif 'lpv' in ogle_file:
+            ogle_count['lpv'] += 1
+        elif 'ecl' in ogle_file:
+            ogle_count['ecl'] += 1
+        else:
+            print("this shouldn't happend")
+            exit()
+    print(ogle_count)
+
     aux_dic = {}
     ogle = {}
     ATLAS = {}
@@ -127,7 +152,7 @@ def get_files(extraRandom = False, permutation=False):
 
     new_files = []
     #for idx in tqdm(range(len(files2))): #tqdm is a progress bar
-    for idx in range(len(files2)): #tqdm is a progress bar
+    for idx in range(len(files1)): #tqdm is a progress bar
         foundOgle = False
         foundATLAS = False
         #foundVista = False
@@ -138,23 +163,7 @@ def get_files(extraRandom = False, permutation=False):
             # if subclass == 'cep':
             #     print('Cepheid Test Print-out:')
             #     print(ogle[subclass])
-            #     print(ATLAS[subclass])
             #     print(files1[idx])
-            #     print(files2[idx])
-            try:
-                temp = ogle[subclass] < limit and subclass in files1[idx]
-            except Exception as e:
-                if subclass == 'cep':
-                    print('cepheid goes through')
-                else:
-                    print('this could crash it')
-                    print(files1)
-                    print('subclass: ', subclass)
-                    print(foundOgle)
-                    print(ogle[subclass])
-                    print('length of files 1+2 ?: ', len(files1), len(files2))
-                    print(files1[idx])
-                exit()
 
             # Ogle
             # Limit is max stars of one class taken from survey (default 8000)
@@ -164,7 +173,7 @@ def get_files(extraRandom = False, permutation=False):
                 foundOgle = True
 
             # ATLAS
-            if not foundATLAS and ATLAS[subclass] < limit and subclass in files2[idx]:
+            if not foundATLAS and ATLAS[subclass] < limit and idx < len(files2) and subclass in files2[idx]:
                 new_files += [[files2[idx], 0]]
                 ATLAS[subclass] += 1
                 foundATLAS = True
@@ -180,6 +189,8 @@ def get_files(extraRandom = False, permutation=False):
     del files1, files2
 
     print('[!] Loaded Files')
+
+    print('Check OGLE numbers: ', ogle['cep'])
 
     return new_files
 
@@ -422,6 +433,11 @@ def dataset(files, N):
             elif 'ATLAS' in file:
                 t, m, e = open_atlas(file, num, N, [1,3,4]) #These are the relevant columns in atlas data
             if c in subclasses:
+
+                #print('time data: ', t)
+                #print('mag data: ', m)
+                #print('N: ', N)
+
                 input_1.append(create_matrix(t, N))
                 input_2.append(create_matrix(m, N))
                 yClassTrain.append(c)
