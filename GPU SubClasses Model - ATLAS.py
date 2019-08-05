@@ -352,10 +352,8 @@ def open_atlas(path, num, n, columns):
     try:
         df.b = df.b.astype(float)
     except Exception as e:
-        print('Crashed while converting files! Crashing line was: ')
-        print(df)
-        print('File Location: ')
-        print(path)
+        print('Crashed while converting files! Crashing line was: ', df)
+        print('File Location: ', path)
         exit()
 
     df = df[df.b > 0]
@@ -433,11 +431,6 @@ def dataset(files, N):
             elif 'ATLAS' in file:
                 t, m, e = open_atlas(file, num, N, [1,3,4]) #These are the relevant columns in atlas data
             if c in subclasses:
-
-                #print('time data: ', t)
-                #print('mag data: ', m)
-                #print('N: ', N)
-
                 input_1.append(create_matrix(t, N))
                 input_2.append(create_matrix(m, N))
                 yClassTrain.append(c)
@@ -580,7 +573,6 @@ def experiment(directory, files, Y, classes, N, n_splits):
                     model = multi_gpu_model(model, gpus=num_gpu)
 
                 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-                print(batch_size,num_gpu) #Having GPU issues
                 model.fit([dTrain_1, dTrain_2], yTrain,
                           batch_size=batch_size * num_gpu, epochs=epochs,
                           validation_split=validation_set, verbose=1,
