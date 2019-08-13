@@ -60,18 +60,6 @@ for file_type in types_to_process:
 
 import zipfile
 
-# def zipdir(path, ziph):
-#     # ziph is zipfile handle
-#     for root, dirs, files in os.walk(path):
-#         for file in files:
-#             ziph.write(os.path.join(root, file))
-#
-# types_to_process = ['cep','ecl','rrlyr','lpv']
-# for file_type in types_to_process:
-#     zipf = zipfile.ZipFile('ATLAS-'+file_type+'.zip', 'w', zipfile.ZIP_DEFLATED)
-#     zipdir('Unsupervised/'+file_type+'Laptop Files/', zipf)
-#     zipf.close()
-
 import shutil
 types_to_process = ['cep','ecl','rrlyr','lpv']
 for file_type in types_to_process:

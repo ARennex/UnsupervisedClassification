@@ -1,0 +1,13 @@
+Uploading the results....vvv_input.csv file to #usertable via the VSA. With the query:
+
+SELECT v.sourceID,d.mjd,d.aperMag3,d.aperMag3Err,d.ppErrBits,d.seqNum,b.flag
+FROM vvvSourceXDetectionBestMatch AS b,vvvDetection AS d,vvvVariability AS v,#userTable as u
+WHERE b.multiframeID=d.multiframeID AND b.extNum=d.extNum AND b.seqNum=d.seqNum AND d.filterID=5 AND v.sourceID=b.sourceID AND v.sourceID=u.sourceID AND d.mjd > 0
+ORDER BY v.sourceID
+
+To get all the VVV pawprints to see the range of ra and dec used:
+
+SELECT ra, dec FROM vvvMergeLog order by ra
+
+
+
