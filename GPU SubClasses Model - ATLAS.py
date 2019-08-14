@@ -63,9 +63,7 @@ base_path = os.getcwd()
 #Laptop version
 regular_exp1 = base_path + '/Temp/OGLE/**/*.dat'
 regular_exp2 = base_path + '/Temp/ATLAS/**/*.csv'
-
-#regular_exp1 = base_path + '/OGLE/**/Processed Files/*.dat'
-#regular_exp2 = base_path + '/ATLAS/**/Processed Files/*.csv'
+regular_exp3 = base_path + '/Temp/VVV/**/*.csv'
 
 #regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
 #regular_exp2 = base_path + '/ATLAS/**/*.csv'
@@ -99,7 +97,7 @@ def get_filename(directory, N, early, activation='relu'):
 def get_files(extraRandom = False, permutation=False):
     files1 = np.array(list(glob.iglob(regular_exp1, recursive=True)))
     files2 = np.array(list(glob.iglob(regular_exp2, recursive=True)))
-    #files3 = np.array(list(glob.iglob(regular_exp3, recursive=True)))
+    files3 = np.array(list(glob.iglob(regular_exp3, recursive=True)))
     #Glob searches for all files that fit the format given in regular_exp1
     #Then puts them in a list
 
@@ -116,7 +114,7 @@ def get_files(extraRandom = False, permutation=False):
     if permutation:
         files1 = files1[np.random.permutation(len(files1))]
         files2 = files2[np.random.permutation(len(files2))]
-        #files3 = files3[np.random.permutation(len(files3))]
+        files3 = files3[np.random.permutation(len(files3))]
 
         print('[!] Permutation applied')
         #Shuffles the arrays
@@ -142,12 +140,12 @@ def get_files(extraRandom = False, permutation=False):
     aux_dic = {}
     ogle = {}
     ATLAS = {}
-    #vvv = {}
+    vvv = {}
     for subclass in subclasses:
         aux_dic[subclass] = []
         ogle[subclass] = 0
         ATLAS[subclass] = 0
-        #vvv[subclass] = 0
+        vvv[subclass] = 0
 
 
     new_files = []
@@ -155,7 +153,7 @@ def get_files(extraRandom = False, permutation=False):
     for idx in range(len(files1)): #tqdm is a progress bar
         foundOgle = False
         foundATLAS = False
-        #foundVista = False
+        foundVista = False
 
         for subclass in subclasses:
 
@@ -180,13 +178,13 @@ def get_files(extraRandom = False, permutation=False):
 
             # VVV
             # idx check since VVV has less data than Ogle
-            #if not foundVista and vvv[subclass] < limit and idx < len(files3) and subclass in files3[idx]:
-            #    new_files += [[files3[idx], 0]]
-            #    vvv[subclass] += 1
-            #    foundVista = True
+            if not foundVista and vvv[subclass] < limit and idx < len(files3) and subclass in files3[idx]:
+               new_files += [[files3[idx], 0]]
+               vvv[subclass] += 1
+               foundVista = True
 
-    #del files1, files2, files3
-    del files1, files2
+    del files1, files2, files3
+    #del files1, files2
 
     print('[!] Loaded Files')
 
@@ -266,6 +264,7 @@ def get_name_with_survey(path):
 
 def open_vista(path, num):
     df = pd.read_csv(path, comment='#', sep=',')
+    df.columns = ['sourceID','mjd','mag','ppErrBits','Flag']
     df = df[df.mjd > 0]
     df = df.sort_values(by=[df.columns[1]])
 
