@@ -101,14 +101,7 @@ def get_files(extraRandom = False, permutation=False):
     #Glob searches for all files that fit the format given in regular_exp1
     #Then puts them in a list
 
-    print('[!] Print files1 ', regular_exp1, files1)
-
     print('[!] Files in Memory')
-
-    print('[!] Removing Source Files from ATLAS')
-    new_files2 = [ x for x in files2 if "aaronb" in x ]
-    files2 = np.array(new_files2)
-    print(files2 != new_files2)
 
     # Permutations
     if permutation:
@@ -263,8 +256,9 @@ def get_name_with_survey(path):
     return 'err'
 
 def open_vista(path, num):
-    df = pd.read_csv(path, comment='#', sep=',')
-    df.columns = ['sourceID','mjd','mag','ppErrBits','Flag']
+    df = pd.read_csv(path, comment='#', sep=',', header = None)
+    #print(df.iloc[0])
+    df.columns = ['sourceID','mjd','mag','ppErrBits','Flag','empty']
     df = df[df.mjd > 0]
     df = df.sort_values(by=[df.columns[1]])
 
