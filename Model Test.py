@@ -56,8 +56,6 @@ filters2 = 64
 kernel_size = 50
 kernel_size2 = 50
 
-# Paths
-NumberOfFiles = '10Fold'
 base_path = os.getcwd()
 
 #Laptop version
@@ -65,34 +63,7 @@ regular_exp1 = base_path + '/Temp/OGLE/**/*.dat'
 regular_exp2 = base_path + '/Temp/ATLAS/**/*.csv'
 regular_exp3 = base_path + '/Temp/VVV/**/*.csv'
 
-#regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
-#regular_exp2 = base_path + '/ATLAS/**/*.csv'
-#regular_exp3 = base_path + 'Subclasses/VVV/**/*.csv'
-
-## Open Databases
-#subclasses = ['cep10', 'cepF', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
 subclasses = ['lpv','cep','rrlyr','ecl']
-
-
-#Make some fake classes and new fake data folders with just 0s and stuff to check it works
-#subclasses = ['noise']
-#regular_exp1
-
-def get_filename(directory, N, early, activation='relu'):
-    if activation == 'relu':
-        directory += '/relu/'
-    elif activation == 'sigmoid':
-        directory += '/sigmoid/'
-    else:
-        directory += '/tanh/'
-
-    if not os.path.exists(directory):
-        print('[+] Creating Directory \n\t ->', directory)
-        os.mkdir(directory)
-
-    name = '1) Red ' + str(N)
-    directory += '/'
-    return directory, name
 
 def get_files(extraRandom = False, permutation=False):
     files1 = np.array(list(glob.iglob(regular_exp1, recursive=True)))
@@ -180,55 +151,6 @@ def get_files(extraRandom = False, permutation=False):
     #del files1, files2
 
     print('[!] Loaded Files')
-
-    print('Check OGLE numbers: ', ogle['cep'])
-
-    return new_files
-
-
-def replicate_by_survey(files, yTrain):
-
-    surveys = ["OGLE", "VVV", "ATLAS"]
-
-    new_files = []
-    for s in surveys:
-        mask = [ s in i for i in yTrain]
-        auxYTrain = yTrain[mask]
-
-        new_files += replicate(files[mask])
-
-    return new_files
-
-
-def replicate(files):
-    aux_dic = {}
-    for subclass in subclasses:
-        aux_dic[subclass] = []
-
-    for file, num in files:
-        for subclass in subclasses:
-            if subclass in file:
-                aux_dic[subclass].append([file, num])
-                break
-
-    new_files = []
-    for subclass in subclasses:
-        array = aux_dic[subclass]
-        length = len(array)
-        if length == 0:
-            continue
-
-        new_files += array
-        if length < limit and extraRandom:
-                count = 1
-                q = limit // length
-                for i in range(1, min(q, maximum)):
-                    for file, num in array:
-                        new_files += [[file, count]]
-                    count += 1
-                r = limit - q*length
-                if r > 1:
-                    new_files += [[random.choice(array)[0], count] for i in range(r)]
 
     return new_files
 
@@ -416,7 +338,10 @@ def dataset(files, N):
     for file, num in files:
         num = int(num)
         t, m, e, c, s = None, None, None, get_name(file), get_survey(file)
+        print("Dataset Test 1: ", c, s)
+        print(subclasses)
         if c in subclasses:
+            print("Dataset Test 2: ", file)
             if 'VVV' in file:
                 t, m, e = open_vista(file, num)
             elif 'OGLE' in file:
@@ -473,16 +398,7 @@ def class_to_vector(Y, classes):
         new_y.append(aux)
     return np.array(new_y)
 
-def serialize_model(name, model):
-    # Serialize model to JSON
-    model_json = model.to_json()
-    with open(name + '.json', "w") as json_file:
-        json_file.write(model_json)
-
-    # Serialize weights to HDF5
-    model.save_weights(name + ".h5")
-
-def experiment(directory, files, Y, classes, N, n_splits):
+def experiment(files, Y, classes, N, n_splits):
     # Iterating
     activations = ['tanh']
     earlyStopping = [False]
@@ -496,13 +412,6 @@ def experiment(directory, files, Y, classes, N, n_splits):
                   '\n\t\t\t [!] Early Stopping', early,
                   '\n\t\t\t [!] Activation', activation)
 
-            #Retreives directory name which includes the activation func,
-            #Creates one chosen activation func if it doesn't exist
-            #name var = "1) Red" + N
-            #N is the number of points
-            direc, name =  get_filename(directory, N,
-                                        early, activation)
-            filename_exp = direc + name
             yPred = np.array([])
             yReal = np.array([])
             sReal = np.array([])
@@ -515,32 +424,23 @@ def experiment(directory, files, Y, classes, N, n_splits):
             print('Y counts', Counter(Y))
 
             for train_index, test_index in skf.split(files, Y):
+                print("Did split correctly?")
                 dTrain, dTest = files[train_index], files[test_index]
                 yTrain = Y[train_index]
 
-                ##############
-                ### Get DB ###
-                ##############
-
-                # Replicate Files
-                dTrain = replicate_by_survey(dTrain, yTrain)
-
+                print("Did seperate into test + train correctly?")
                 # Get Database
                 dTrain_1, dTrain_2, yTrain, _ = dataset(dTrain, N)
                 dTest_1, dTest_2, yTest, sTest  = dataset(dTest, N)
+
+                print("Did run dataset function correctly?")
 
                 yReal = np.append(yReal, yTest)
                 sReal = np.append(sReal, sTest)
                 yTrain = class_to_vector(yTrain, classes)
                 yTest = class_to_vector(yTest, classes)
 
-                ################
-                ## Tensorboard #
-                ################
-
-                tensorboard = TensorBoard(log_dir= direc + 'logs',
-                                          write_graph=True, write_images=True)
-
+                print("Did vectorize class correctly?")
                 ################
                 ##    Model   ##
                 ################
@@ -551,6 +451,7 @@ def experiment(directory, files, Y, classes, N, n_splits):
                                                   verbose=0, mode='auto')
                     callbacks.append(earlyStopping)
 
+                print("Did vectorize correctly?")
                 if num_gpu <= 1:
                     print("[!] Training with 1 GPU")
                     model = get_model(N, classes, activation)
@@ -565,37 +466,16 @@ def experiment(directory, files, Y, classes, N, n_splits):
                     # Make the model parallel
                     model = multi_gpu_model(model, gpus=num_gpu)
 
-                model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-                model.fit([dTrain_1, dTrain_2], yTrain,
-                          batch_size=batch_size * num_gpu, epochs=epochs,
-                          validation_split=validation_set, verbose=1,
-                          callbacks=callbacks)
 
+                print(dTest_1,dTest_2)
                 yPred = np.append(yPred, np.argmax(model.predict([dTest_1, dTest_2]), axis=1))
-
-                #################
-                ##  Serialize  ##
-                #################
-
-                modelDirectory = direc + 'model/'
-                if not os.path.exists(modelDirectory):
-                    print('[+] Creating Directory \n\t ->', modelDirectory)
-                    os.mkdir(modelDirectory)
-
-                serialize_model(modelDirectory + str(modelNum), model)
-                modelNum += 1
 
                 del dTrain, dTest, yTrain, yTest, model
                 # break
 
             yPred = np.array([classes[int(i)]  for i in yPred])
 
-            # Save Matrix
-            print('\n \t\t\t [+] Saving Results in', filename_exp)
-            np.save(filename_exp, [yReal, yPred, sReal])
             print('*'*30)
-            # except Exception as e:
-            #     print('\t\t\t [!] Fatal Error:\n\t\t', str(e))
 
 print('[+] Getting Filenames')
 files = np.array(get_files(extraRandom, permutation))
@@ -607,11 +487,6 @@ YSubClass = np.array(YSubClass)
 NUMBER_OF_POINTS = 500
 while NUMBER_OF_POINTS <= MAX_NUMBER_OF_POINTS:
 
-    # Create Folder
-    directory = './Results' + NumberOfFiles
-    if not os.path.exists(directory):
-        print('[+] Creating Directory \n\t ->', directory)
-        os.mkdir(directory)
-
-    experiment(directory, files, YSubClass, subclasses, NUMBER_OF_POINTS, n_splits)
+    print("Running Experiment")
+    experiment(files, YSubClass, subclasses, NUMBER_OF_POINTS, n_splits)
     NUMBER_OF_POINTS += step
