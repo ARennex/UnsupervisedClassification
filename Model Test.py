@@ -5,6 +5,8 @@ from keras.models import Model
 from keras.utils import multi_gpu_model
 from keras.models import model_from_json
 
+from keras import backend as K
+
 import tensorflow as tf #Getting tf not defined errors
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -405,79 +407,133 @@ def experiment(files, Y, classes, N, n_splits):
 
     #Iterate over the activation functions, but only tanh is used where
     #Since it obtained the best results
-    for model_name in [0,1,2,3,4,5,6,7,8,9]:
-        for activation in activations:
-            # try:
-            print('\t\t [+] Training',
-                  '\n\t\t\t [!] Activation', activation)
 
-            yPred = np.array([])
-            yReal = np.array([])
-            sReal = np.array([])
+    for activation in activations:
+        # try:
+        print('\t\t [+] Training',
+              '\n\t\t\t [!] Activation', activation)
 
-            modelNum = 0
-            skf = StratifiedKFold(n_splits=n_splits)
+        yPred = np.array([])
+        yReal = np.array([])
+        sReal = np.array([])
 
-            print('files',files)
-            print('Y',Y)
-            print('Y counts', Counter(Y))
+        modelNum = 0
+        skf = StratifiedKFold(n_splits=n_splits)
 
-            for train_index, test_index in skf.split(files, Y):
-                print("Did split correctly?")
-                dTrain, dTest = files[train_index], files[test_index]
-                yTrain = Y[train_index]
-                print(dTrain)
-                print(dTest)
-                print(yTrain)
+        print('files',files)
+        print('Y',Y)
+        print('Y counts', Counter(Y))
 
-                print("Did seperate into test + train correctly?")
-                # Get Database
-                dTrain_1, dTrain_2, yTrain, _ = dataset(dTrain, N)
-                dTest_1, dTest_2, yTest, sTest  = dataset(dTest, N)
-                print(dTrain_1, dTrain_2, yTrain)
-                print(dTest_1, dTest_2, yTest, sTest)
+        dTest = files
 
-                print("Did run dataset function correctly?")
+        # Get Database
+        dTest_1, dTest_2, yTest, sTest  = dataset(dTest, N)
+        print(dTest_1, dTest_2, yTest, sTest)
 
-                yReal = np.append(yReal, yTest)
-                sReal = np.append(sReal, sTest)
-                yTrain = class_to_vector(yTrain, classes)
-                yTest = class_to_vector(yTest, classes)
+        print("Did run dataset function correctly?")
 
-                print("Did vectorize class correctly?")
+        yReal = np.append(yReal, yTest) #This is class label
+        sReal = np.append(sReal, sTest) #This is survey label
+        yTest = class_to_vector(yTest, classes)
 
-                #model = tf.keras.models.model_from_json(json_string)
+        print("Did vectorize class correctly?")
 
-                # load json and create model
-                json_file = open(base_path + '/Results10Fold/tanh/model/'+str(model_name)+'.json', 'r')
-                loaded_model_json = json_file.read()
-                json_file.close()
-                loaded_model = model_from_json(loaded_model_json)
-                # load weights into new model
-                loaded_model.load_weights(base_path + "/Results10Fold/tanh/model/"+str(model_name)+".h5")
-                print("Loaded model from disk")
+        del dTest, yTest
 
-                from keras import backend as K
-                frozen_graph = freeze_session(K.get_session(),
-                              output_names=[out.op.name for out in loaded_model.outputs])
+        for model_name in [0,1,2,3,4,5,6,7,8,9]:
 
-                loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-                yPred = np.append(yPred, np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1))
+            # load json and create model
+            json_file = open(base_path + '/Results10Fold/tanh/model/'+str(model_name)+'.json', 'r')
+            loaded_model_json = json_file.read()
+            json_file.close()
+            loaded_model = model_from_json(loaded_model_json)
+            # load weights into new model
+            loaded_model.load_weights(base_path + "/Results10Fold/tanh/model/"+str(model_name)+".h5")
+            print("Loaded model from disk")
 
-                #print(dTest_1,dTest_2)
+            frozen_graph = freeze_session(K.get_session(),
+                          output_names=[out.op.name for out in loaded_model.outputs])
 
-                del dTrain, dTest, yTrain, yTest, loaded_model
-                break
+            loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+            #yPred = np.append(yPred, np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)) #Temporarily remove
+            yPred = np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)
+
+            #del dTrain, dTest, yTrain, yTest, loaded_model
+            del loaded_model
 
             yPred = np.array([classes[int(i)]  for i in yPred])
-            print([yReal, yPred, sReal])
+            print([yReal, yPred, sReal], len(yPred))
             print('*'*30)
             true_match = (x == y for x, y in zip(yReal, yPred))
-            print(np.sum(true_match)/len(yReal))
-            y_accuracy = np.sum(true_match)/len(yReal)
-            #s_accuracy = np.sum((x == y for x, y in zip(sReal, yPred)))/len(yReal)
-            output = output + 'Y accuracy: '+str(y_accuracy)+'/n'
-            #output = output + 'Y accuracy: '+str(y_accuracy)+' S accuracy: '+str(s_accuracy)+'/n'
+            #print(np.sum(true_match)/len(yReal))
+            #y_accuracy = (np.sum(true_match)/len(yReal))
+            #print(y_accuracy)
+            output = output + ' Y accuracy: {:f}'.format(np.sum(true_match)/len(yReal)) + '/n'
+
+            #break
+        #
+        # for train_index, test_index in skf.split(files, Y):
+        #     print("Did split correctly?")
+        #     dTrain, dTest = files[train_index], files[test_index]
+        #     yTrain = Y[train_index]
+        #     print(dTrain)
+        #     print(dTest)
+        #     print(yTrain)
+        #
+        #     print("Did seperate into test + train correctly?")
+        #     # Get Database
+        #     dTrain_1, dTrain_2, yTrain, _ = dataset(dTrain, N)
+        #     dTest_1, dTest_2, yTest, sTest  = dataset(dTest, N)
+        #     print(dTrain_1, dTrain_2, yTrain)
+        #     print(dTest_1, dTest_2, yTest, sTest)
+        #
+        #     print("Did run dataset function correctly?")
+        #
+        #     yReal = np.append(yReal, yTest)
+        #     sReal = np.append(sReal, sTest)
+        #     yTrain = class_to_vector(yTrain, classes)
+        #     yTest = class_to_vector(yTest, classes)
+        #
+        #     print("Did vectorize class correctly?")
+        #
+        #     del dTrain, dTest, yTrain, yTest
+        #
+        #     for model_name in [0,1,2,3,4,5,6,7,8,9]:
+        #
+        #         #model = tf.keras.models.model_from_json(json_string)
+        #
+        #         # load json and create model
+        #         json_file = open(base_path + '/Results10Fold/tanh/model/'+str(model_name)+'.json', 'r')
+        #         loaded_model_json = json_file.read()
+        #         json_file.close()
+        #         loaded_model = model_from_json(loaded_model_json)
+        #         # load weights into new model
+        #         loaded_model.load_weights(base_path + "/Results10Fold/tanh/model/"+str(model_name)+".h5")
+        #         print("Loaded model from disk")
+        #
+        #         frozen_graph = freeze_session(K.get_session(),
+        #                       output_names=[out.op.name for out in loaded_model.outputs])
+        #
+        #         loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        #
+        #         #yPred = np.append(yPred, np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)) #Temporarily remove
+        #         yPred = np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)
+        #
+        #         #del dTrain, dTest, yTrain, yTest, loaded_model
+        #         del loaded_model
+        #
+        #         yPred = np.array([classes[int(i)]  for i in yPred])
+        #         print([yReal, yPred, sReal])
+        #         print('*'*30)
+        #         true_match = (x == y for x, y in zip(yReal, yPred))
+        #         print(np.sum(true_match)/len(yReal))
+        #         y_accuracy = np.sum(true_match)/len(yReal)
+        #         #s_accuracy = np.sum((x == y for x, y in zip(sReal, yPred)))/len(yReal)
+        #         output = output + 'Y accuracy: '+str(y_accuracy)+'/n'
+        #         #output = output + 'Y accuracy: '+str(y_accuracy)+' S accuracy: '+str(s_accuracy)+'/n'
+        #
+        #         #break
 
     return output
 

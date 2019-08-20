@@ -1,1 +1,1 @@
-Y accuracy: 0.0/n
+ Y accuracy: 0.816222/n Y accuracy: 0.815209/n Y accuracy: 0.821563/n Y accuracy: 0.814627/n Y accuracy: 0.810701/n Y accuracy: 0.800505/n Y accuracy: 0.816194/n Y accuracy: 0.813531/n Y accuracy: 0.806359/n Y accuracy: 0.814460/n
