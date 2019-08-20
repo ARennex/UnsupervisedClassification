@@ -1,5 +1,4 @@
 # coding: utf-8
-from keras.callbacks import EarlyStopping, TensorBoard
 from keras.layers import Input, Concatenate, Conv1D
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.models import Model
@@ -84,24 +83,6 @@ def get_files(extraRandom = False, permutation=False):
         print('[!] Permutation applied')
         #Shuffles the arrays
 
-    #Count the number of ogle cepheids in files1:
-    ogle_count = {}
-    for subclass in subclasses:
-        ogle_count[subclass] = 0
-    for ogle_file in files1:
-        if 'cep' in ogle_file:
-            ogle_count['cep'] += 1
-        elif 'rrlyr' in ogle_file:
-            ogle_count['rrlyr'] += 1
-        elif 'lpv' in ogle_file:
-            ogle_count['lpv'] += 1
-        elif 'ecl' in ogle_file:
-            ogle_count['ecl'] += 1
-        else:
-            print("this shouldn't happend")
-            exit()
-    print(ogle_count)
-
     aux_dic = {}
     ogle = {}
     ATLAS = {}
@@ -121,12 +102,6 @@ def get_files(extraRandom = False, permutation=False):
         foundVista = False
 
         for subclass in subclasses:
-
-            #Believe Cepheids may not being counted properly
-            # if subclass == 'cep':
-            #     print('Cepheid Test Print-out:')
-            #     print(ogle[subclass])
-            #     print(files1[idx])
 
             # Ogle
             # Limit is max stars of one class taken from survey (default 8000)
@@ -149,7 +124,6 @@ def get_files(extraRandom = False, permutation=False):
                foundVista = True
 
     del files1, files2, files3
-    #del files1, files2
 
     print('[!] Loaded Files')
 
@@ -320,8 +294,7 @@ def create_matrix(data, N):
     try:
         aux = np.append([0], np.diff(data).flatten())
     except Exception as e:
-        print('Crashed at diff!')
-        print('Value in Data List: ', data)
+        print('Crashed at np.diff!')
         exit()
 
     # Padding with zero if aux is not long enough
@@ -427,17 +400,15 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
 def experiment(files, Y, classes, N, n_splits):
     # Iterating
     activations = ['tanh']
-    earlyStopping = [False]
 
     output = ''
 
     #Iterate over the activation functions, but only tanh is used where
     #Since it obtained the best results
-    for early in earlyStopping:
+    for model_name in [0,1,2,3,4,5,6,7,8,9]:
         for activation in activations:
             # try:
             print('\t\t [+] Training',
-                  '\n\t\t\t [!] Early Stopping', early,
                   '\n\t\t\t [!] Activation', activation)
 
             yPred = np.array([])
@@ -455,11 +426,16 @@ def experiment(files, Y, classes, N, n_splits):
                 print("Did split correctly?")
                 dTrain, dTest = files[train_index], files[test_index]
                 yTrain = Y[train_index]
+                print(dTrain)
+                print(dTest)
+                print(yTrain)
 
                 print("Did seperate into test + train correctly?")
                 # Get Database
                 dTrain_1, dTrain_2, yTrain, _ = dataset(dTrain, N)
                 dTest_1, dTest_2, yTest, sTest  = dataset(dTest, N)
+                print(dTrain_1, dTrain_2, yTrain)
+                print(dTest_1, dTest_2, yTest, sTest)
 
                 print("Did run dataset function correctly?")
 
@@ -473,25 +449,25 @@ def experiment(files, Y, classes, N, n_splits):
                 #model = tf.keras.models.model_from_json(json_string)
 
                 # load json and create model
-                json_file = open(base_path + '/Results10Fold/tanh/model/9.json', 'r')
+                json_file = open(base_path + '/Results10Fold/tanh/model/'+str(model_name)+'.json', 'r')
                 loaded_model_json = json_file.read()
                 json_file.close()
                 loaded_model = model_from_json(loaded_model_json)
                 # load weights into new model
-                loaded_model.load_weights(base_path + "/Results10Fold/tanh/model/9.h5")
+                loaded_model.load_weights(base_path + "/Results10Fold/tanh/model/"+str(model_name)+".h5")
                 print("Loaded model from disk")
 
                 from keras import backend as K
                 frozen_graph = freeze_session(K.get_session(),
                               output_names=[out.op.name for out in loaded_model.outputs])
 
-                #loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+                loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
                 yPred = np.append(yPred, np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1))
 
                 #print(dTest_1,dTest_2)
 
                 del dTrain, dTest, yTrain, yTest, loaded_model
-                # break
+                break
 
             yPred = np.array([classes[int(i)]  for i in yPred])
             print([yReal, yPred, sReal])
