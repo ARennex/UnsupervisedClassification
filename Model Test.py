@@ -4,6 +4,7 @@ from keras.layers import Input, Concatenate, Conv1D
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.models import Model
 from keras.utils import multi_gpu_model
+from keras.models import model_from_json
 
 import tensorflow as tf #Getting tf not defined errors
 
@@ -338,10 +339,7 @@ def dataset(files, N):
     for file, num in files:
         num = int(num)
         t, m, e, c, s = None, None, None, get_name(file), get_survey(file)
-        print("Dataset Test 1: ", c, s)
-        print(subclasses)
         if c in subclasses:
-            print("Dataset Test 2: ", file)
             if 'VVV' in file:
                 t, m, e = open_vista(file, num)
             elif 'OGLE' in file:
@@ -398,10 +396,40 @@ def class_to_vector(Y, classes):
         new_y.append(aux)
     return np.array(new_y)
 
+def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
+    """
+    Freezes the state of a session into a pruned computation graph.
+
+    Creates a new computation graph where variable nodes are replaced by
+    constants taking their current value in the session. The new graph will be
+    pruned so subgraphs that are not necessary to compute the requested
+    outputs are removed.
+    @param session The TensorFlow session to be frozen.
+    @param keep_var_names A list of variable names that should not be frozen,
+                          or None to freeze all the variables in the graph.
+    @param output_names Names of the relevant graph outputs.
+    @param clear_devices Remove the device directives from the graph for better portability.
+    @return The frozen graph definition.
+    """
+    graph = session.graph
+    with graph.as_default():
+        freeze_var_names = list(set(v.op.name for v in tf.global_variables()).difference(keep_var_names or []))
+        output_names = output_names or []
+        output_names += [v.op.name for v in tf.global_variables()]
+        input_graph_def = graph.as_graph_def()
+        if clear_devices:
+            for node in input_graph_def.node:
+                node.device = ""
+        frozen_graph = tf.graph_util.convert_variables_to_constants(
+            session, input_graph_def, output_names, freeze_var_names)
+        return frozen_graph
+
 def experiment(files, Y, classes, N, n_splits):
     # Iterating
     activations = ['tanh']
     earlyStopping = [False]
+
+    output = ''
 
     #Iterate over the activation functions, but only tanh is used where
     #Since it obtained the best results
@@ -441,41 +469,42 @@ def experiment(files, Y, classes, N, n_splits):
                 yTest = class_to_vector(yTest, classes)
 
                 print("Did vectorize class correctly?")
-                ################
-                ##    Model   ##
-                ################
 
-                callbacks = [tensorboard]
-                if early:
-                    earlyStopping = EarlyStopping(monitor='val_loss', patience=3,
-                                                  verbose=0, mode='auto')
-                    callbacks.append(earlyStopping)
+                #model = tf.keras.models.model_from_json(json_string)
 
-                print("Did vectorize correctly?")
-                if num_gpu <= 1:
-                    print("[!] Training with 1 GPU")
-                    model = get_model(N, classes, activation)
-                else:
-                    print("[!] Training with", str(num_gpu), "GPUs")
+                # load json and create model
+                json_file = open(base_path + '/Results10Fold/tanh/model/9.json', 'r')
+                loaded_model_json = json_file.read()
+                json_file.close()
+                loaded_model = model_from_json(loaded_model_json)
+                # load weights into new model
+                loaded_model.load_weights(base_path + "/Results10Fold/tanh/model/9.h5")
+                print("Loaded model from disk")
 
-                    # We'll store a copy of the model on *every* GPU and then combine
-                    # the results from the gradient updates on the CPU
-                    with tf.device("/cpu:0"):
-                        model = get_model(N, classes, activation)
+                from keras import backend as K
+                frozen_graph = freeze_session(K.get_session(),
+                              output_names=[out.op.name for out in loaded_model.outputs])
 
-                    # Make the model parallel
-                    model = multi_gpu_model(model, gpus=num_gpu)
+                #loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+                yPred = np.append(yPred, np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1))
 
+                #print(dTest_1,dTest_2)
 
-                print(dTest_1,dTest_2)
-                yPred = np.append(yPred, np.argmax(model.predict([dTest_1, dTest_2]), axis=1))
-
-                del dTrain, dTest, yTrain, yTest, model
+                del dTrain, dTest, yTrain, yTest, loaded_model
                 # break
 
             yPred = np.array([classes[int(i)]  for i in yPred])
-
+            print([yReal, yPred, sReal])
             print('*'*30)
+            true_match = (x == y for x, y in zip(yReal, yPred))
+            print(np.sum(true_match)/len(yReal))
+            y_accuracy = np.sum(true_match)/len(yReal)
+            #s_accuracy = np.sum((x == y for x, y in zip(sReal, yPred)))/len(yReal)
+            output = output + 'Y accuracy: '+str(y_accuracy)+'/n'
+            #output = output + 'Y accuracy: '+str(y_accuracy)+' S accuracy: '+str(s_accuracy)+'/n'
+
+    return output
+
 
 print('[+] Getting Filenames')
 files = np.array(get_files(extraRandom, permutation))
@@ -488,5 +517,9 @@ NUMBER_OF_POINTS = 500
 while NUMBER_OF_POINTS <= MAX_NUMBER_OF_POINTS:
 
     print("Running Experiment")
-    experiment(files, YSubClass, subclasses, NUMBER_OF_POINTS, n_splits)
+    output = experiment(files, YSubClass, subclasses, NUMBER_OF_POINTS, n_splits)
     NUMBER_OF_POINTS += step
+
+    text_file = open("Accuracy last model.txt", "a")
+    text_file.write(output)
+    text_file.close()

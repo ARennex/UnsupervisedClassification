@@ -181,8 +181,6 @@ def get_files(extraRandom = False, permutation=False):
 
     print('[!] Loaded Files')
 
-    print('Check OGLE numbers: ', ogle['cep'])
-
     return new_files
 
 
