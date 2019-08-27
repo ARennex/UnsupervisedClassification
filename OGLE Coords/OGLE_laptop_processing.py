@@ -2,26 +2,64 @@ import numpy as np
 import pandas as pd
 
 import os,glob
+import os.path
 from string import digits
+
+from astropy.coordinates import SkyCoord
+from astropy import units as u
 
 base_path = os.getcwd()
 
+divide_to_subclasses = True
+save_coord_list_for_VVV = True
+
+def ra_dec_conversion(row):
+    c = SkyCoord(row[2], row[3], unit=(u.hourangle, u.deg))
+    return (c.ra / u.deg).value,(c.dec / u.deg).value
+    #return pd.Series((c.ra / u.deg).value,(c.dec / u.deg).value)
+
+def VVV_coords(path,type,input_ogle_data):
+    #print(input_ogle_data.apply(ra_dec_conversion, axis=1))
+    #ogle_data['ra'],ogle_data['dec'] = input_ogle_data.apply(ra_dec_conversion, axis=1)
+    ogle_data = input_ogle_data.apply(ra_dec_conversion, axis=1)
+    print(ogle_data)
+    ogle_data = ogle_data.str.split(',',expand=True)
+    print(ogle_data)
+    ogle_data = ogle_data.loc[(ogle_data['ra'] >= 170) & (ogle_data['ra'] <= 281) &
+       (ogle_data['dec'] >= -75) & (ogle_data['dec'] <= -20)]
+
+    length = len(ogle_data)
+    if length > 10000:
+        dfs = np.split(ogle_data, [int(length/2)], axis=0)
+        dfs[0].to_csv(path+type+"VVVCoordsPartOne.csv",index=False, header=None)
+        dfs[1].to_csv(path+type+"VVVCoordsPartTwo.csv",index=False, header=None)
+    else:
+        ogle_data.to_csv(path+type+"VVVCoords.csv",index=False, header=None)
+
 def subclass_mode(path):
     subclass_dict = {}
-    need a process to read in the file type from the ident.dat files
-    read that in first, build a dict of object ids and subtypes
-    match that to the main file and use that to save to specific subfolders?
-
-    object_identity = pd.read_csv(path+'ident.dat', header=None, usecols=[0,1], sep=' ')
-    print(object_identity)
-    keys, values = object_identity[0].values(),object_identity[1].values()
-    subclass_dict = dict(zip(keys, values))
-
-    return subclass_dict
+    #need a process to read in the file type from the ident.dat files
+    #read that in first, build a dict of object ids and subtypes
+    #match that to the main file and use that to save to specific subfolders?
+    identity_path = path+'/ident.dat'
+    if os.path.isfile(identity_path):
+        object_identity = pd.read_csv(identity_path, header=None, usecols=[0,1,2,3,4], delim_whitespace=True)
+        if save_coord_list_for_VVV == True:
+            for unique_type in pd.unique(object_identity[1]):
+                unique_type='ELL'
+                print(unique_type)
+                VVV_coords(path,unique_type,object_identity[object_identity[1] == unique_type])
+                exit()
+        keys, values = object_identity[0].tolist(),object_identity[1].tolist()
+        subclass_dict = dict(zip(keys, values))
+        return subclass_dict
+    else:
+        return None
 
 path = os.getcwd()
-subclass_mode(path)
-break
+path = path + '/ecl'
+result = subclass_mode(path)
+exit()
 
 def main_loop():
     processed_objects = 0
@@ -34,6 +72,9 @@ def main_loop():
         single_type_path = base_path + '/' + file_type
         contents_path = single_type_path + '/phot/I' + '/OGLE-*.dat'
         print("Loaded file: " + single_type_path + '/phot/I' + ". Processing!")
+
+        if divide_to_subclasses == True:
+            subclass_mode(single_type_path)
 
         #These files are already sorted by mjd, no need to do it myself
 
