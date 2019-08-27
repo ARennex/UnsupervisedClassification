@@ -11,20 +11,16 @@ from astropy import units as u
 base_path = os.getcwd()
 
 divide_to_subclasses = True
-save_coord_list_for_VVV = True
+save_coord_list_for_VVV = False
+types_to_process = ['cep','ecl','rrlyr','lpv']
+types_to_process = ['cep','ecl']
 
 def ra_dec_conversion(row):
-    c = SkyCoord(row[2], row[3], unit=(u.hourangle, u.deg))
+    c = SkyCoord(row[0], row[1], unit=(u.hourangle, u.deg))
     return (c.ra / u.deg).value,(c.dec / u.deg).value
-    #return pd.Series((c.ra / u.deg).value,(c.dec / u.deg).value)
 
 def VVV_coords(path,type,input_ogle_data):
-    #print(input_ogle_data.apply(ra_dec_conversion, axis=1))
-    #ogle_data['ra'],ogle_data['dec'] = input_ogle_data.apply(ra_dec_conversion, axis=1)
-    ogle_data = input_ogle_data.apply(ra_dec_conversion, axis=1)
-    print(ogle_data)
-    ogle_data = ogle_data.str.split(',',expand=True)
-    print(ogle_data)
+    ogle_data = pd.DataFrame([ra_dec_conversion(x[2:4]) for x in input_ogle_data.values.tolist()],columns=['ra','dec'])
     ogle_data = ogle_data.loc[(ogle_data['ra'] >= 170) & (ogle_data['ra'] <= 281) &
        (ogle_data['dec'] >= -75) & (ogle_data['dec'] <= -20)]
 
@@ -46,26 +42,18 @@ def subclass_mode(path):
         object_identity = pd.read_csv(identity_path, header=None, usecols=[0,1,2,3,4], delim_whitespace=True)
         if save_coord_list_for_VVV == True:
             for unique_type in pd.unique(object_identity[1]):
-                unique_type='ELL'
-                print(unique_type)
+                print("Processing Subclass: ", unique_type, " for VVV crossmatching.")
                 VVV_coords(path,unique_type,object_identity[object_identity[1] == unique_type])
-                exit()
         keys, values = object_identity[0].tolist(),object_identity[1].tolist()
         subclass_dict = dict(zip(keys, values))
         return subclass_dict
     else:
         return None
 
-path = os.getcwd()
-path = path + '/ecl'
-result = subclass_mode(path)
-exit()
-
 def main_loop():
     processed_objects = 0
     max_objects = 8000
 
-    types_to_process = ['cep','ecl','rrlyr','lpv']
     for file_type in types_to_process:
         processed_objects = 0
 
@@ -73,26 +61,50 @@ def main_loop():
         contents_path = single_type_path + '/phot/I' + '/OGLE-*.dat'
         print("Loaded file: " + single_type_path + '/phot/I' + ". Processing!")
 
+        #Collect dictionary
+        dict_returned_succesful = False
         if divide_to_subclasses == True:
-            subclass_mode(single_type_path)
+            subclass_dict=subclass_mode(single_type_path)
+            if subclass_dict != None:
+                dict_returned_succesful = True
 
         #These files are already sorted by mjd, no need to do it myself
 
         #Check if the processed files directory exists
         os.makedirs((base_path + '/' + file_type + '/Laptop Files'), exist_ok=True)
+        #If so make the sub-driectories for each type
+        if dict_returned_succesful == True:
+            all_subclasses = set(subclass_dict.values())
+            processed_objects = {}
+            for subclass in all_subclasses:
+                os.makedirs((base_path + '/' + file_type + '/Laptop Files/'+subclass), exist_ok=True)
+                processed_objects[subclass] = 0
 
         #Get list of all files of each type
         files1 = np.array(list(glob.iglob(contents_path, recursive=True)))
-
         print('Files loaded from: ', files1)
 
         for file in files1: #Added tqdm so I can check the progress
-            file_signature = ''.join(c for c in file if c in digits)
+            _ , ogle_file_identity = os.path.split(file)
+            ogle_file_identity = ogle_file_identity[:-4]
+            if dict_returned_succesful == True:
+                subclass = subclass_dict[ogle_file_identity]+'/'
+            else:
+                subclass = ''
 
             #To prevent this running for far too long, skip after 8000 objects
-            if processed_objects >= max_objects:
-                print("Over Max Objects")
-                break
+            #This version modified to account for subclasses and non subclasses
+            if dict_returned_succesful == True:
+                if processed_objects[subclass_dict[ogle_file_identity]] >= max_objects:
+                    if all(value > 8000 for value in processed_objects.values()):
+                        print("Over Max Objects")
+                        break
+                    else:
+                        continue
+            else:
+                if processed_objects >= max_objects:
+                    print("Over Max Objects")
+                    break
 
             with open(file, 'r') as input_file:
                 index = 0
@@ -107,13 +119,16 @@ def main_loop():
                             previous_value_mag = float(values[1])
                             index += 1
                         except Exception as e:
-                            print(line.split(' '))
-                            print(file)
+                            print("File: ", file, " crashed at split: ",line.split(' '))
                             exit()
 
-                        processed_objects += 1
+                        if dict_returned_succesful == True:
+                            processed_objects[subclass_dict[ogle_file_identity]] += 1
+                        else:
+                            processed_objects += 1
 
-                    with open(single_type_path+'/Laptop Files/output_{num:0>3}.dat'.format(num=file_signature), 'a') as output_file:
+                    #with open(single_type_path+'/Laptop Files/'+subclass+'output_{num:0>3}.dat'.format(num=file_signature), 'a') as output_file:
+                    with open(single_type_path+'/Laptop Files/'+subclass+'output_{name}.dat'.format(name=ogle_file_identity), 'a') as output_file:
                         new_line = [str(float(values[0])-previous_value_time),
                                     str(float(values[1])-previous_value_mag),
                                     values[2]]
@@ -125,9 +140,3 @@ def main_loop():
                         previous_value_mag = float(values[1])
 
 main_loop()
-
-# import shutil
-# types_to_process = ['cep','ecl','rrlyr','lpv']
-# for file_type in types_to_process:
-#     shutil.make_archive('OGLE-'+file_type, 'zip', file_type+'/Laptop Files/')
-#     #shutil.make_archive('ATLAS-'+file_type+'.zip', 'zip', file_type+'/Laptop Files/')
