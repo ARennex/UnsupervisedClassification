@@ -72,7 +72,7 @@ regular_exp3 = base_path + '/Temp/VVV/**/*.csv'
 ## Open Databases
 #subclasses = ['cep10', 'cepF', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
 subclasses = ['lpv','cep','rrlyr','ecl']
-
+subclasses = ['lpv','cep','rrlyr','ecl-c','ecl-nc']
 
 #Make some fake classes and new fake data folders with just 0s and stuff to check it works
 #subclasses = ['noise']
@@ -111,24 +111,6 @@ def get_files(extraRandom = False, permutation=False):
 
         print('[!] Permutation applied')
         #Shuffles the arrays
-
-    #Count the number of ogle cepheids in files1:
-    ogle_count = {}
-    for subclass in subclasses:
-        ogle_count[subclass] = 0
-    for ogle_file in files1:
-        if 'cep' in ogle_file:
-            ogle_count['cep'] += 1
-        elif 'rrlyr' in ogle_file:
-            ogle_count['rrlyr'] += 1
-        elif 'lpv' in ogle_file:
-            ogle_count['lpv'] += 1
-        elif 'ecl' in ogle_file:
-            ogle_count['ecl'] += 1
-        else:
-            print("this shouldn't happend")
-            exit()
-    print(ogle_count)
 
     aux_dic = {}
     ogle = {}
@@ -339,7 +321,13 @@ def open_ogle(path, num, n, columns):
 
 def open_atlas(path, num, n, columns):
     df = pd.read_csv(path, comment='#', sep=',', header=None)
-    df.columns = ['a','b','c','d','e','f']
+    if len(df.columns) == 6:
+        df.columns = ['a','b','c','d','e','f']
+    elif len(df.columns) == 5:
+        df.columns = ['a','b','c','d','e']
+    else:
+        print('Something broke while assigning column names!')
+        exit()
     try:
         df.b = df.b.astype(float)
     except Exception as e:
