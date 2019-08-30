@@ -1,50 +1,60 @@
-key: rrlyr accuracy: 0.886073
-key: ecl accuracy: 0.590399
-key: lpv accuracy: 0.969235
-key: cep accuracy: 0.653153
+key: lpv accuracy: 0.961165
+key: rrlyr accuracy: 0.873411
+key: ecl-nc accuracy: 0.621651
+key: ecl-c accuracy: 0.499562
+key: cep accuracy: 0.970291
 ******************************
-key: rrlyr accuracy: 0.893880
-key: ecl accuracy: 0.584429
-key: lpv accuracy: 0.965645
-key: cep accuracy: 0.608108
+key: lpv accuracy: 0.958165
+key: rrlyr accuracy: 0.876745
+key: ecl-nc accuracy: 0.629943
+key: ecl-c accuracy: 0.528480
+key: cep accuracy: 0.970291
 ******************************
-key: rrlyr accuracy: 0.902313
-key: ecl accuracy: 0.597078
-key: lpv accuracy: 0.966605
-key: cep accuracy: 0.644144
+key: lpv accuracy: 0.955373
+key: rrlyr accuracy: 0.894162
+key: ecl-nc accuracy: 0.614651
+key: ecl-c accuracy: 0.506896
+key: cep accuracy: 0.970852
 ******************************
-key: rrlyr accuracy: 0.907281
-key: ecl accuracy: 0.575746
-key: lpv accuracy: 0.961179
-key: cep accuracy: 0.680180
+key: lpv accuracy: 0.964165
+key: rrlyr accuracy: 0.878078
+key: ecl-nc accuracy: 0.613692
+key: ecl-c accuracy: 0.499354
+key: cep accuracy: 0.972534
 ******************************
-key: rrlyr accuracy: 0.877098
-key: ecl accuracy: 0.596159
-key: lpv accuracy: 0.959175
-key: cep accuracy: 0.639640
+key: lpv accuracy: 0.958665
+key: rrlyr accuracy: 0.886537
+key: ecl-nc accuracy: 0.614692
+key: ecl-c accuracy: 0.513605
+key: cep accuracy: 0.966648
 ******************************
-key: rrlyr accuracy: 0.866870
-key: ecl accuracy: 0.581090
-key: lpv accuracy: 0.954625
-key: cep accuracy: 0.594595
+key: lpv accuracy: 0.966415
+key: rrlyr accuracy: 0.883412
+key: ecl-nc accuracy: 0.608567
+key: ecl-c accuracy: 0.495396
+key: cep accuracy: 0.969170
 ******************************
-key: rrlyr accuracy: 0.903148
-key: ecl accuracy: 0.591651
-key: lpv accuracy: 0.951286
-key: cep accuracy: 0.612613
+key: lpv accuracy: 0.958248
+key: rrlyr accuracy: 0.879995
+key: ecl-nc accuracy: 0.617026
+key: ecl-c accuracy: 0.501438
+key: cep accuracy: 0.964406
 ******************************
-key: rrlyr accuracy: 0.885405
-key: ecl accuracy: 0.589981
-key: lpv accuracy: 0.964268
-key: cep accuracy: 0.617117
+key: lpv accuracy: 0.959332
+key: rrlyr accuracy: 0.877453
+key: ecl-nc accuracy: 0.624484
+key: ecl-c accuracy: 0.486604
+key: cep accuracy: 0.966648
 ******************************
-key: rrlyr accuracy: 0.862403
-key: ecl accuracy: 0.591401
-key: lpv accuracy: 0.969861
-key: cep accuracy: 0.653153
+key: lpv accuracy: 0.966332
+key: rrlyr accuracy: 0.869953
+key: ecl-nc accuracy: 0.604775
+key: ecl-c accuracy: 0.490437
+key: cep accuracy: 0.968890
 ******************************
-key: rrlyr accuracy: 0.894423
-key: ecl accuracy: 0.580589
-key: lpv accuracy: 0.966188
-key: cep accuracy: 0.680180
+key: lpv accuracy: 0.962207
+key: rrlyr accuracy: 0.871495
+key: ecl-nc accuracy: 0.615276
+key: ecl-c accuracy: 0.513396
+key: cep accuracy: 0.965807
 ******************************

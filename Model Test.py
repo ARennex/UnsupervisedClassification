@@ -66,6 +66,7 @@ regular_exp2 = base_path + '/Temp/ATLAS/**/*.csv'
 regular_exp3 = base_path + '/Temp/VVV/**/*.csv'
 
 subclasses = ['lpv','cep','rrlyr','ecl']
+subclasses = ['lpv','cep','rrlyr','ecl-c','ecl-nc']
 
 def get_files(extraRandom = False, permutation=False):
     files1 = np.array(list(glob.iglob(regular_exp1, recursive=True)))
@@ -240,7 +241,10 @@ def open_ogle(path, num, n, columns):
 
 def open_atlas(path, num, n, columns):
     df = pd.read_csv(path, comment='#', sep=',', header=None)
-    df.columns = ['a','b','c','d','e','f']
+    if len(df.columns) == 6:
+        df.columns = ['a','b','c','d','e','f']
+    elif len(df.columns) == 5:
+        df.columns = ['a','b','c','d','e']
     try:
         df.b = df.b.astype(float)
     except Exception as e:
