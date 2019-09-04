@@ -1,162 +1,62 @@
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3461      9      14     21     63   3568
-ecl-c       422  12048    4985   1373   5171  23999
-ecl-nc      433   2018   14891   2683   3974  23999
-lpv          41    395     267  23086    210  23999
-rrlyr       104   1549     875    469  21002  23999
-All        4461  16019   21032  27632  30420  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.970011  0.000375  0.000583  0.000875  0.002625
-ecl-c      0.118274  0.502021  0.207717  0.057211  0.215467
-ecl-nc     0.121357  0.084087  0.620484  0.111796  0.165590
-lpv        0.011491  0.016459  0.011125  0.961957  0.008750
-rrlyr      0.029148  0.064544  0.036460  0.019542  0.875120
+key: lpv accuracy: 0.961165
+key: rrlyr accuracy: 0.873411
+key: ecl-nc accuracy: 0.621651
+key: ecl-c accuracy: 0.499562
+key: cep accuracy: 0.970291
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3465     13      11     17     62   3568
-ecl-c       219  12704    5114   1205   4757  23999
-ecl-nc      178   2638   15082   2027   4074  23999
-lpv          30    469     290  22950    260  23999
-rrlyr        87   1601     829    395  21087  23999
-All        3979  17425   21326  26594  30240  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.971132  0.000542  0.000458  0.000708  0.002583
-ecl-c      0.061379  0.529355  0.213092  0.050210  0.198217
-ecl-nc     0.049888  0.109921  0.628443  0.084462  0.169757
-lpv        0.008408  0.019542  0.012084  0.956290  0.010834
-rrlyr      0.024383  0.066711  0.034543  0.016459  0.878662
+key: lpv accuracy: 0.958165
+key: rrlyr accuracy: 0.876745
+key: ecl-nc accuracy: 0.629943
+key: ecl-c accuracy: 0.528480
+key: cep accuracy: 0.970291
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3455     10       9     24     70   3568
-ecl-c        59  12125    4643   1015   6157  23999
-ecl-nc      104   2176   14804   1867   5048  23999
-lpv          47    448     274  22926    304  23999
-rrlyr        92   1400     738    289  21480  23999
-All        3757  16159   20468  26121  33059  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.968330  0.000417  0.000375  0.001000  0.002917
-ecl-c      0.016536  0.505229  0.193466  0.042293  0.256552
-ecl-nc     0.029148  0.090670  0.616859  0.077795  0.210342
-lpv        0.013173  0.018667  0.011417  0.955290  0.012667
-rrlyr      0.025785  0.058336  0.030751  0.012042  0.895037
+key: lpv accuracy: 0.955373
+key: rrlyr accuracy: 0.894162
+key: ecl-nc accuracy: 0.614651
+key: ecl-c accuracy: 0.506896
+key: cep accuracy: 0.970852
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3457     10       8     18     75   3568
-ecl-c       529  11954    4762   1605   5149  23999
-ecl-nc      531   2105   14736   2968   3659  23999
-lpv          27    380     266  23121    205  23999
-rrlyr       108   1558     760    505  21068  23999
-All        4652  16007   20532  28217  30156  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.968890  0.000417  0.000333  0.000750  0.003125
-ecl-c      0.148262  0.498104  0.198425  0.066878  0.214551
-ecl-nc     0.148823  0.087712  0.614026  0.123672  0.152465
-lpv        0.007567  0.015834  0.011084  0.963415  0.008542
-rrlyr      0.030269  0.064919  0.031668  0.021043  0.877870
+key: lpv accuracy: 0.964165
+key: rrlyr accuracy: 0.878078
+key: ecl-nc accuracy: 0.613692
+key: ecl-c accuracy: 0.499354
+key: cep accuracy: 0.972534
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3443      9      11     23     82   3568
-ecl-c       473  12337    4576   1202   5411  23999
-ecl-nc      346   2251   14775   2346   4281  23999
-lpv          29    425     253  23003    289  23999
-rrlyr        83   1539     707    328  21342  23999
-All        4374  16561   20322  26902  31405  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.964966  0.000375  0.000458  0.000958  0.003417
-ecl-c      0.132567  0.514063  0.190675  0.050085  0.225468
-ecl-nc     0.096973  0.093796  0.615651  0.097754  0.178382
-lpv        0.008128  0.017709  0.010542  0.958498  0.012042
-rrlyr      0.023262  0.064128  0.029460  0.013667  0.889287
+key: lpv accuracy: 0.958665
+key: rrlyr accuracy: 0.886537
+key: ecl-nc accuracy: 0.614692
+key: ecl-c accuracy: 0.513605
+key: cep accuracy: 0.966648
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3473      9       7     16     63   3568
-ecl-c       153  11793    4547   1777   5729  23999
-ecl-nc      101   1850   14606   3259   4183  23999
-lpv          41    320     252  23183    203  23999
-rrlyr       142   1479     777    414  21187  23999
-All        3910  15451   20189  28649  31365  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.973374  0.000375  0.000292  0.000667  0.002625
-ecl-c      0.042881  0.491395  0.189466  0.074045  0.238718
-ecl-nc     0.028307  0.077087  0.608609  0.135797  0.174299
-lpv        0.011491  0.013334  0.010500  0.965999  0.008459
-rrlyr      0.039798  0.061628  0.032376  0.017251  0.882828
+key: lpv accuracy: 0.966415
+key: rrlyr accuracy: 0.883412
+key: ecl-nc accuracy: 0.608567
+key: ecl-c accuracy: 0.495396
+key: cep accuracy: 0.969170
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3441     14      14     25     74   3568
-ecl-c        70  12116    4979   1103   5731  23999
-ecl-nc       55   2151   14767   2066   4960  23999
-lpv          39    434     282  23004    240  23999
-rrlyr       129   1542     863    347  21118  23999
-All        3734  16257   20905  26545  32123  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.964406  0.000583  0.000583  0.001042  0.003083
-ecl-c      0.019619  0.504854  0.207467  0.045960  0.238802
-ecl-nc     0.015415  0.089629  0.615317  0.086087  0.206675
-lpv        0.010930  0.018084  0.011750  0.958540  0.010000
-rrlyr      0.036155  0.064253  0.035960  0.014459  0.879953
+key: lpv accuracy: 0.958248
+key: rrlyr accuracy: 0.879995
+key: ecl-nc accuracy: 0.617026
+key: ecl-c accuracy: 0.501438
+key: cep accuracy: 0.964406
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3437     11      13     25     82   3568
-ecl-c       350  11696    5343   1241   5369  23999
-ecl-nc      299   2077   14994   2409   4220  23999
-lpv          30    435     308  22994    232  23999
-rrlyr        81   1677     916    315  21010  23999
-All        4197  15896   21574  26984  30913  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.963285  0.000458  0.000542  0.001042  0.003417
-ecl-c      0.098094  0.487354  0.222634  0.051710  0.223718
-ecl-nc     0.083800  0.086545  0.624776  0.100379  0.175841
-lpv        0.008408  0.018126  0.012834  0.958123  0.009667
-rrlyr      0.022702  0.069878  0.038168  0.013126  0.875453
+key: lpv accuracy: 0.959332
+key: rrlyr accuracy: 0.877453
+key: ecl-nc accuracy: 0.624484
+key: ecl-c accuracy: 0.486604
+key: cep accuracy: 0.966648
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3449     14       4     29     72   3568
-ecl-c        64  11721    4807   2399   5008  23999
-ecl-nc       76   2030   14548   3930   3415  23999
-lpv          23    350     204  23200    222  23999
-rrlyr        81   1710     760    546  20902  23999
-All        3693  15825   20323  30104  29619  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.966648  0.000583  0.000167  0.001208  0.003000
-ecl-c      0.017937  0.488395  0.200300  0.099962  0.208675
-ecl-nc     0.021300  0.084587  0.606192  0.163757  0.142298
-lpv        0.006446  0.014584  0.008500  0.966707  0.009250
-rrlyr      0.022702  0.071253  0.031668  0.022751  0.870953
+key: lpv accuracy: 0.966332
+key: rrlyr accuracy: 0.869953
+key: ecl-nc accuracy: 0.604775
+key: ecl-c accuracy: 0.490437
+key: cep accuracy: 0.968890
 ******************************
-Predicted   cep  ecl-c  ecl-nc    lpv  rrlyr    All
-Actual                                             
-cep        3455     14       9     20     70   3568
-ecl-c        85  12306    4977   1392   5239  23999
-ecl-nc      158   2181   14768   2518   4374  23999
-lpv          37    429     269  23063    201  23999
-rrlyr       118   1591     887    477  20926  23999
-All        3853  16521   20910  27470  30810  99564
-Predicted       cep     ecl-c    ecl-nc       lpv     rrlyr
-Actual                                                     
-cep        0.968330  0.000583  0.000375  0.000833  0.002917
-ecl-c      0.023823  0.512771  0.207384  0.058002  0.218301
-ecl-nc     0.044283  0.090879  0.615359  0.104921  0.182258
-lpv        0.010370  0.017876  0.011209  0.960998  0.008375
-rrlyr      0.033072  0.066294  0.036960  0.019876  0.871953
+key: lpv accuracy: 0.962207
+key: rrlyr accuracy: 0.871495
+key: ecl-nc accuracy: 0.615276
+key: ecl-c accuracy: 0.513396
+key: cep accuracy: 0.965807
 ******************************
 key: lpv accuracy: 0.961207
 key: rrlyr accuracy: 0.871995

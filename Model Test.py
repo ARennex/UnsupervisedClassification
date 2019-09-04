@@ -19,8 +19,6 @@ import argparse
 
 from collections import Counter #Count number of objects in each class
 
-from sklearn.metrics import confusion_matrix #Create a confusion matrix
-
 # Construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-g", "--gpus", type=int, default=1,
@@ -465,46 +463,29 @@ def experiment(files, Y, classes, N, n_splits):
             loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
             #yPred = np.append(yPred, np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)) #Temporarily remove
-            print(loaded_model.predict([dTest_1, dTest_2]))
             yPred = np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)
 
             #del dTrain, dTest, yTrain, yTest, loaded_model
             del loaded_model
 
             yPred = np.array([classes[int(i)]  for i in yPred])
-            #print([yReal, yPred, sReal], len(yPred))
+            print([yReal, yPred, sReal], len(yPred))
             print('*'*30)
-
-            #true_match = (x == y for x, y in zip(yReal, yPred))
-            #true_match = list(true_match)
+            true_match = (x == y for x, y in zip(yReal, yPred))
+            true_match = list(true_match)
             #output = output + ' Y accuracy: {:f}'.format(np.sum(true_match)/len(yReal)) + '\n'
 
-            # count_dict = {k:0 for k in classes}
-            # for i in np.arange(len(yReal)):
-            #     if true_match[i] == True:
-            #         count_dict[yReal[i]] += 1
+            count_dict = {k:0 for k in classes}
+            for i in np.arange(len(yReal)):
+                if true_match[i] == True:
+                    count_dict[yReal[i]] += 1
 
-            #counted_values = dict(Counter(yReal))
+            counted_values = dict(Counter(yReal))
 
-            #print(counted_values,count_dict)
-            #for key,value in counted_values.items():
-            #    print("key: {} accuracy: {:f}".format(key,count_dict[key]/value))
-            #    output += "key: {} accuracy: {:f}".format(key,count_dict[key]/value) + '\n'
-
-            #conf_matrix = confusion_matrix(yReal,yPred)
-            #print(conf_matrix)
-
-            y_actu = pd.Series(yReal, name='Actual')
-            y_pred = pd.Series(yPred, name='Predicted')
-            df_confusion = pd.crosstab(y_actu, y_pred, rownames=['Actual'], colnames=['Predicted'], margins=True)
-            #print(df_confusion)
-            output += df_confusion.to_string() + '\n'
-
-            df_confusion = pd.crosstab(y_actu, y_pred, rownames=['Actual'], colnames=['Predicted'])
-            df_conf_norm = df_confusion / df_confusion.sum(axis=1)
-            #print(df_conf_norm)
-            output += df_conf_norm.to_string() + '\n'
-
+            print(counted_values,count_dict)
+            for key,value in counted_values.items():
+                print("key: {} accuracy: {:f}".format(key,count_dict[key]/value))
+                output += "key: {} accuracy: {:f}".format(key,count_dict[key]/value) + '\n'
             output += '*'*30 + '\n'
 
             conf_matrix = confusion_matrix(yReal,yPred)
