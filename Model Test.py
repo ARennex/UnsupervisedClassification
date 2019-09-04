@@ -19,6 +19,8 @@ import argparse
 
 from collections import Counter #Count number of objects in each class
 
+from sklearn.metrics import confusion_matrix #Create a confusion matrix
+
 # Construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-g", "--gpus", type=int, default=1,
@@ -487,6 +489,9 @@ def experiment(files, Y, classes, N, n_splits):
                 print("key: {} accuracy: {:f}".format(key,count_dict[key]/value))
                 output += "key: {} accuracy: {:f}".format(key,count_dict[key]/value) + '\n'
             output += '*'*30 + '\n'
+
+            conf_matrix = confusion_matrix(yReal,yPred)
+            print(conf_matrix)
 
     return output
 
