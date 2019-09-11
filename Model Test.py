@@ -20,8 +20,6 @@ import math
 
 from collections import Counter #Count number of objects in each class
 
-from sklearn.metrics import confusion_matrix #Create a confusion matrix
-
 # Construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-g", "--gpus", type=int, default=1,
@@ -542,8 +540,8 @@ def experiment(files, Y, classes, N, n_splits):
             loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
             #yPred = np.append(yPred, np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)) #Temporarily remove
-            print(loaded_model.predict([dTest_1, dTest_2]))
             yPred = np.argmax(loaded_model.predict([dTest_1, dTest_2]), axis=1)
+            print(loaded_model.predict([dTest_1, dTest_2]))
 
             #del dTrain, dTest, yTrain, yTest, loaded_model
             del loaded_model
@@ -584,6 +582,8 @@ def experiment(files, Y, classes, N, n_splits):
             df_confusion.to_csv(('Data Points per Class, Model '+ str(model_name) + '.csv'))
 
             output += '*'*30 + '\n'
+
+            print('*'*30)
 
     return output
 
