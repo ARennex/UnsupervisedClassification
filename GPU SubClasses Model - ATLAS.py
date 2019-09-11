@@ -64,10 +64,7 @@ base_path = os.getcwd()
 regular_exp1 = base_path + '/Temp/OGLE/**/*.dat'
 regular_exp2 = base_path + '/Temp/ATLAS/**/*.csv'
 regular_exp3 = base_path + '/Temp/VVV/**/*.csv'
-
-#regular_exp1 = base_path + '/ogle/**/phot/I/OGLE-*.dat'
-#regular_exp2 = base_path + '/ATLAS/**/*.csv'
-#regular_exp3 = base_path + 'Subclasses/VVV/**/*.csv'
+regular_exp4 = base_path + '/Temp/ASASSN/***/**/Laptop Files/*.dat'
 
 ## Open Databases
 #subclasses = ['cep10', 'cepF', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
@@ -98,6 +95,7 @@ def get_files(extraRandom = False, permutation=False):
     files1 = np.array(list(glob.iglob(regular_exp1, recursive=True)))
     files2 = np.array(list(glob.iglob(regular_exp2, recursive=True)))
     files3 = np.array(list(glob.iglob(regular_exp3, recursive=True)))
+    files4 = np.array(list(glob.iglob(regular_exp4, recursive=True)))
     #Glob searches for all files that fit the format given in regular_exp1
     #Then puts them in a list
 
@@ -108,6 +106,7 @@ def get_files(extraRandom = False, permutation=False):
         files1 = files1[np.random.permutation(len(files1))]
         files2 = files2[np.random.permutation(len(files2))]
         files3 = files3[np.random.permutation(len(files3))]
+        files4 = files4[np.random.permutation(len(files4))]
 
         print('[!] Permutation applied')
         #Shuffles the arrays
@@ -116,11 +115,13 @@ def get_files(extraRandom = False, permutation=False):
     ogle = {}
     ATLAS = {}
     vvv = {}
+    asassn = {}
     for subclass in subclasses:
         aux_dic[subclass] = []
         ogle[subclass] = 0
         ATLAS[subclass] = 0
         vvv[subclass] = 0
+        asassn[subclass] = 0
 
 
     new_files = []
@@ -129,14 +130,9 @@ def get_files(extraRandom = False, permutation=False):
         foundOgle = False
         foundATLAS = False
         foundVista = False
+        foundAsassn = False
 
         for subclass in subclasses:
-
-            #Believe Cepheids may not being counted properly
-            # if subclass == 'cep':
-            #     print('Cepheid Test Print-out:')
-            #     print(ogle[subclass])
-            #     print(files1[idx])
 
             # Ogle
             # Limit is max stars of one class taken from survey (default 8000)
@@ -158,7 +154,14 @@ def get_files(extraRandom = False, permutation=False):
                vvv[subclass] += 1
                foundVista = True
 
-    del files1, files2, files3
+            # ASASSN
+            # some of the classes lack all 8000 objects
+            if not foundAsassn and asassn[subclass] < limit and idx < len(files4) and subclass in files4[idx]:
+               new_files += [[files4[idx], 0]]
+               asassn[subclass] += 1
+               foundAsassn = True
+
+    del files1, files2, files3, files4
     #del files1, files2
 
     print('[!] Loaded Files')
@@ -168,7 +171,7 @@ def get_files(extraRandom = False, permutation=False):
 
 def replicate_by_survey(files, yTrain):
 
-    surveys = ["OGLE", "VVV", "ATLAS"]
+    surveys = ["OGLE", "VVV", "ATLAS", "ASASSN"]
 
     new_files = []
     for s in surveys:
@@ -219,6 +222,8 @@ def get_survey(path):
         return 'ATLAS'
     elif 'OGLE' in path:
         return 'OGLE'
+    elif 'ASASSN' in path:
+        return 'ASASSN'
     else:
         return 'err'
 
@@ -378,6 +383,52 @@ def open_atlas(path, num, n, columns):
 
     return time, magnitude, error
 
+def open_asassn(path, num, n, columns):
+    df = pd.read_csv(path, comment='#', sep='\s+', header=None)
+    df.columns = ['a','b','c']
+    df = df[df.a > 0]
+    df = df.sort_values(by=[df.columns[columns[0]]])
+
+    # Erase duplicates if it exist
+    df.drop_duplicates(subset='a', keep='first')
+
+    # 3 Desviaciones Standard
+    #df = df[np.abs(df.mjd-df.mjd.mean())<=(3*df.mjd.std())]
+
+    time = np.array(df[df.columns[columns[0]]].values, dtype=float)
+    magnitude = np.array(df[df.columns[columns[1]]].values, dtype=float)
+    error = np.array(df[df.columns[columns[2]]].values, dtype=float)
+
+    # Not Nan
+    not_nan = np.where(~np.logical_or(np.isnan(time), np.isnan(magnitude)))[0]
+    time = time[not_nan]
+    magnitude = magnitude[not_nan]
+    error = error[not_nan]
+
+    # Num
+    step = random.randint(1, 2)
+    count = random.randint(0, num)
+
+    time = time[::step]
+    magnitude = magnitude[::step]
+    error = error[::step]
+
+    time = time[count:]
+    magnitude = magnitude[count:]
+    error = error[count:]
+
+
+    if len(time) > n:
+        time = time[:n]
+        magnitude = magnitude[:n]
+        error = error[:n]
+
+    # Get Name of Class
+    # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
+    # path, folder_name = os.path.split(folder_path)
+
+    return time, magnitude, error
+
 # Data has the form (Points,(Delta Time, Mag, Error)) 1D
 def create_matrix(data, N):
     try:
@@ -409,6 +460,8 @@ def dataset(files, N):
                 t, m, e = open_ogle(file, num, N, [0,1,2])
             elif 'ATLAS' in file:
                 t, m, e = open_atlas(file, num, N, [1,3,4]) #These are the relevant columns in atlas data
+            elif 'ASASSN' in file:
+                t, m, e = open_asassn(file, num, N, [0,1,2])
             if c in subclasses:
                 input_1.append(create_matrix(t, N))
                 input_2.append(create_matrix(m, N))

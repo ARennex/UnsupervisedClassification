@@ -13,7 +13,7 @@ max_lines = 1000000000
 max_objects = 8000
 
 types_to_process = ['cep','rrlyr','lpv','ecl']
-types_to_process = ['ecl_close','ecl_distant']
+types_to_process = ['lpv','ecl_close','ecl_distant']
 for file_type in types_to_process:
     filename = base_path + '/' + file_type + '_aaronb.csv'
     print("Loaded file: " + filename + ". Processing!")

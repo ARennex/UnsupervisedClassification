@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import glob, os, random
 import argparse
+import math
 
 from collections import Counter #Count number of objects in each class
 
@@ -62,18 +63,27 @@ kernel_size2 = 50
 
 base_path = os.getcwd()
 
+
 #Laptop version
 regular_exp1 = base_path + '/Temp/OGLE/**/*.dat'
 regular_exp2 = base_path + '/Temp/ATLAS/**/*.csv'
 regular_exp3 = base_path + '/Temp/VVV/**/*.csv'
+regular_exp4 = base_path + '/Temp/ASASSN/***/**/Laptop Files/*.dat'
 
+## Open Databases
+#subclasses = ['cep10', 'cepF', 'RRab', 'RRc', 'nonEC', 'EC', 'Mira', 'SRV', 'Osarg']
 subclasses = ['lpv','cep','rrlyr','ecl']
 subclasses = ['lpv','cep','rrlyr','ecl-c','ecl-nc']
+
+#Make some fake classes and new fake data folders with just 0s and stuff to check it works
+#subclasses = ['noise']
+#regular_exp1
 
 def get_files(extraRandom = False, permutation=False):
     files1 = np.array(list(glob.iglob(regular_exp1, recursive=True)))
     files2 = np.array(list(glob.iglob(regular_exp2, recursive=True)))
     files3 = np.array(list(glob.iglob(regular_exp3, recursive=True)))
+    files4 = np.array(list(glob.iglob(regular_exp4, recursive=True)))
     #Glob searches for all files that fit the format given in regular_exp1
     #Then puts them in a list
 
@@ -84,6 +94,7 @@ def get_files(extraRandom = False, permutation=False):
         files1 = files1[np.random.permutation(len(files1))]
         files2 = files2[np.random.permutation(len(files2))]
         files3 = files3[np.random.permutation(len(files3))]
+        files4 = files4[np.random.permutation(len(files4))]
 
         print('[!] Permutation applied')
         #Shuffles the arrays
@@ -92,11 +103,13 @@ def get_files(extraRandom = False, permutation=False):
     ogle = {}
     ATLAS = {}
     vvv = {}
+    asassn = {}
     for subclass in subclasses:
         aux_dic[subclass] = []
         ogle[subclass] = 0
         ATLAS[subclass] = 0
         vvv[subclass] = 0
+        asassn[subclass] = 0
 
 
     new_files = []
@@ -105,6 +118,7 @@ def get_files(extraRandom = False, permutation=False):
         foundOgle = False
         foundATLAS = False
         foundVista = False
+        foundAsassn = False
 
         for subclass in subclasses:
 
@@ -128,7 +142,15 @@ def get_files(extraRandom = False, permutation=False):
                vvv[subclass] += 1
                foundVista = True
 
-    del files1, files2, files3
+            # ASASSN
+            # some of the classes lack all 8000 objects
+            if not foundAsassn and asassn[subclass] < limit and idx < len(files4) and subclass in files4[idx]:
+               new_files += [[files4[idx], 0]]
+               asassn[subclass] += 1
+               foundAsassn = True
+
+    del files1, files2, files3, files4
+    #del files1, files2
 
     print('[!] Loaded Files')
 
@@ -141,6 +163,8 @@ def get_survey(path):
         return 'ATLAS'
     elif 'OGLE' in path:
         return 'OGLE'
+    elif 'ASASSN' in path:
+        return 'ASASSN'
     else:
         return 'err'
 
@@ -156,6 +180,16 @@ def get_name_with_survey(path):
             survey = get_survey(path)
             return survey + '_' + subclass
     return 'err'
+
+files_without_data = []
+
+def size_calculator(length,path):
+    rounded_value = int(math.ceil(length / 100.0)) * 100
+    if rounded_value == 0:
+        print(length)
+        files_without_data.append(path)
+    return_str = str(rounded_value-100) + ' < ' + str(rounded_value)
+    return return_str
 
 def open_vista(path, num):
     df = pd.read_csv(path, comment='#', sep=',', header = None)
@@ -193,7 +227,7 @@ def open_vista(path, num):
     # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
     # path, folder_name = os.path.split(folder_path)
 
-    return time.astype('float'), magnitude.astype('float'), error.astype('float')
+    return time.astype('float'), magnitude.astype('float'), error.astype('float'), size_calculator(len(df['sourceID']),path)
 
 def open_ogle(path, num, n, columns):
     df = pd.read_csv(path, comment='#', sep='\s+', header=None)
@@ -239,7 +273,7 @@ def open_ogle(path, num, n, columns):
     # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
     # path, folder_name = os.path.split(folder_path)
 
-    return time, magnitude, error
+    return time, magnitude, error, size_calculator(len(df['a']),path)
 
 def open_atlas(path, num, n, columns):
     df = pd.read_csv(path, comment='#', sep=',', header=None)
@@ -295,7 +329,53 @@ def open_atlas(path, num, n, columns):
     # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
     # path, folder_name = os.path.split(folder_path)
 
-    return time, magnitude, error
+    return time, magnitude, error, size_calculator(len(df['a']),path)
+
+def open_asassn(path, num, n, columns):
+    df = pd.read_csv(path, comment='#', sep='\s+', header=None)
+    df.columns = ['a','b','c']
+    df = df[df.a > 0]
+    df = df.sort_values(by=[df.columns[columns[0]]])
+
+    # Erase duplicates if it exist
+    df.drop_duplicates(subset='a', keep='first')
+
+    # 3 Desviaciones Standard
+    #df = df[np.abs(df.mjd-df.mjd.mean())<=(3*df.mjd.std())]
+
+    time = np.array(df[df.columns[columns[0]]].values, dtype=float)
+    magnitude = np.array(df[df.columns[columns[1]]].values, dtype=float)
+    error = np.array(df[df.columns[columns[2]]].values, dtype=float)
+
+    # Not Nan
+    not_nan = np.where(~np.logical_or(np.isnan(time), np.isnan(magnitude)))[0]
+    time = time[not_nan]
+    magnitude = magnitude[not_nan]
+    error = error[not_nan]
+
+    # Num
+    step = random.randint(1, 2)
+    count = random.randint(0, num)
+
+    time = time[::step]
+    magnitude = magnitude[::step]
+    error = error[::step]
+
+    time = time[count:]
+    magnitude = magnitude[count:]
+    error = error[count:]
+
+
+    if len(time) > n:
+        time = time[:n]
+        magnitude = magnitude[:n]
+        error = error[:n]
+
+    # Get Name of Class
+    # folder_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
+    # path, folder_name = os.path.split(folder_path)
+
+    return time, magnitude, error, size_calculator(len(df['a']),path)
 
 # Data has the form (Points,(Delta Time, Mag, Error)) 1D
 def create_matrix(data, N):
@@ -316,27 +396,31 @@ def dataset(files, N):
     input_2 = []
     yClassTrain = []
     survey = []
+    lengths = []
     #for file, num in tqdm(files):
     for file, num in files:
         num = int(num)
         t, m, e, c, s = None, None, None, get_name(file), get_survey(file)
         if c in subclasses:
             if 'VVV' in file:
-                t, m, e = open_vista(file, num)
+                t, m, e, length = open_vista(file, num)
             elif 'OGLE' in file:
-                t, m, e = open_ogle(file, num, N, [0,1,2])
+                t, m, e, length = open_ogle(file, num, N, [0,1,2])
             elif 'ATLAS' in file:
-                t, m, e = open_atlas(file, num, N, [1,3,4]) #These are the relevant columns in atlas data
+                t, m, e, length = open_atlas(file, num, N, [1,3,4]) #These are the relevant columns in atlas data
+            elif 'ASASSN' in file:
+                t, m, e, length = open_asassn(file, num, N, [0,1,2])
             if c in subclasses:
                 input_1.append(create_matrix(t, N))
                 input_2.append(create_matrix(m, N))
                 yClassTrain.append(c)
                 survey.append(s)
+                lengths.append(length)
             else:
                 print('\t [!] E2 File not passed: ', file, '\n\t\t - Class: ',  c)
         else:
             print('\t [!] E1 File not passed: ', file, '\n\t\t - Class: ',  c)
-    return np.array(input_1), np.array(input_2), np.array(yClassTrain), np.array(survey)
+    return np.array(input_1), np.array(input_2), np.array(yClassTrain), np.array(survey), lengths #Modified with data point amount measurement
 
 
 ## Keras Model
@@ -433,18 +517,11 @@ def experiment(files, Y, classes, N, n_splits):
         dTest = files
 
         # Get Database
-        dTest_1, dTest_2, yTest, sTest  = dataset(dTest, N)
+        dTest_1, dTest_2, yTest, sTest, data_lengths  = dataset(dTest, N)
         print(dTest_1, dTest_2, yTest, sTest)
-
-        print("Did run dataset function correctly?")
 
         yReal = np.append(yReal, yTest) #This is class label
         sReal = np.append(sReal, sTest) #This is survey label
-        yTest = class_to_vector(yTest, classes)
-
-        print("yTest: ", yTest)
-
-        print("Did vectorize class correctly?")
 
         del dTest, yTest
 
@@ -475,25 +552,6 @@ def experiment(files, Y, classes, N, n_splits):
             #print([yReal, yPred, sReal], len(yPred))
             print('*'*30)
 
-            #true_match = (x == y for x, y in zip(yReal, yPred))
-            #true_match = list(true_match)
-            #output = output + ' Y accuracy: {:f}'.format(np.sum(true_match)/len(yReal)) + '\n'
-
-            # count_dict = {k:0 for k in classes}
-            # for i in np.arange(len(yReal)):
-            #     if true_match[i] == True:
-            #         count_dict[yReal[i]] += 1
-
-            #counted_values = dict(Counter(yReal))
-
-            #print(counted_values,count_dict)
-            #for key,value in counted_values.items():
-            #    print("key: {} accuracy: {:f}".format(key,count_dict[key]/value))
-            #    output += "key: {} accuracy: {:f}".format(key,count_dict[key]/value) + '\n'
-
-            #conf_matrix = confusion_matrix(yReal,yPred)
-            #print(conf_matrix)
-
             y_actu = pd.Series(yReal, name='Actual')
             y_pred = pd.Series(yPred, name='Predicted')
             df_confusion = pd.crosstab(y_actu, y_pred, rownames=['Actual'], colnames=['Predicted'], margins=True)
@@ -504,6 +562,26 @@ def experiment(files, Y, classes, N, n_splits):
             df_conf_norm = df_confusion / df_confusion.sum(axis=1)
             #print(df_conf_norm)
             output += df_conf_norm.to_string() + '\n'
+
+            """
+            Check trends wrt surveys
+            """
+            # x = np.array(sReal)
+            # unique_surveys = np.unique(x)
+            # survey_seperated = [[] for i in unique_surveys]
+            # for single_survey in unique_surveys:
+            #     survey_seperated
+            s_actu = pd.Series(sReal, name='Survey')
+            df_confusion = pd.crosstab([s_actu,y_actu], y_pred, rownames=['Survey','Actual'], colnames=['Predicted'], margins=True)
+            #df_confusion = pd.crosstab([y_actu,s_actu], y_pred, rownames=['Actual','Actual Survey'], colnames=['Predicted'], margins=True)
+            print(df_confusion)
+            output += df_confusion.to_string() + '\n'
+
+            obj_len = pd.Series(data_lengths, name='No. Data Points')
+            df_confusion = pd.crosstab([obj_len,y_actu], y_pred, rownames=['No. Data Points','Actual'], colnames=['Predicted'], margins=True)
+            #df_confusion = pd.crosstab([y_actu,obj_len], y_pred, rownames=['Actual','No. Data Points'], colnames=['Predicted'], margins=True)
+            print(df_confusion)
+            df_confusion.to_csv(('Data Points per Class, Model '+ str(model_name) + '.csv'))
 
             output += '*'*30 + '\n'
 
@@ -527,3 +605,5 @@ while NUMBER_OF_POINTS <= MAX_NUMBER_OF_POINTS:
     text_file = open("Accuracy last model.txt", "a")
     text_file.write(output)
     text_file.close()
+
+print(files_without_data)
