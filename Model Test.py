@@ -20,6 +20,9 @@ import math
 
 from collections import Counter #Count number of objects in each class
 
+import matplotlib.pyplot as plt
+import sklearn.metrics
+
 # Construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-g", "--gpus", type=int, default=1,
@@ -184,7 +187,7 @@ files_without_data = []
 def size_calculator(length,path):
     rounded_value = int(math.ceil(length / 100.0)) * 100
     if rounded_value == 0:
-        print(length)
+        #print(length)
         files_without_data.append(path)
     return_str = str(rounded_value-100) + ' < ' + str(rounded_value)
     return return_str
@@ -395,7 +398,9 @@ def dataset(files, N):
     yClassTrain = []
     survey = []
     lengths = []
-    #for file, num in tqdm(files):
+
+    amplitudes = [] #This is for checking how stuff scales against amplitude/error
+    scale = [] #This stores the amplitude/error bit
     for file, num in files:
         num = int(num)
         t, m, e, c, s = None, None, None, get_name(file), get_survey(file)
@@ -414,11 +419,20 @@ def dataset(files, N):
                 yClassTrain.append(c)
                 survey.append(s)
                 lengths.append(length)
+                try:
+                    maximum = max(m)/2
+                except:
+                    maximum = 0
+                amplitudes.append(maximum)
+                error = np.mean(e)
+                if error <= 0:
+                    error = maximum / 10.
+                scale.append(maximum/error)
             else:
                 print('\t [!] E2 File not passed: ', file, '\n\t\t - Class: ',  c)
         else:
             print('\t [!] E1 File not passed: ', file, '\n\t\t - Class: ',  c)
-    return np.array(input_1), np.array(input_2), np.array(yClassTrain), np.array(survey), lengths #Modified with data point amount measurement
+    return np.array(input_1), np.array(input_2), np.array(yClassTrain), np.array(survey), lengths, amplitudes, scale #Modified with data point amount measurement and
 
 
 ## Keras Model
@@ -515,7 +529,7 @@ def experiment(files, Y, classes, N, n_splits):
         dTest = files
 
         # Get Database
-        dTest_1, dTest_2, yTest, sTest, data_lengths  = dataset(dTest, N)
+        dTest_1, dTest_2, yTest, sTest, data_lengths, amplitudes, scales = dataset(dTest, N)
         print(dTest_1, dTest_2, yTest, sTest)
 
         yReal = np.append(yReal, yTest) #This is class label
@@ -584,6 +598,28 @@ def experiment(files, Y, classes, N, n_splits):
             output += '*'*30 + '\n'
 
             print('*'*30)
+
+            #print(scales)
+            #print(max(scales))
+            #comparison = sklearn.metrics.accuracy_score(yReal,yPred)
+            sorted_zip = sorted(zip(scales,yReal,yPred), key=lambda x: x[0])
+            hist, bin_edges = np.histogram(scales, bins = 40, range=(0,100), density=False)
+            bin_accuracy = []
+            print(bin_edges,bin_edges[:-1],hist)
+            running_total=0
+            for sorted_chunk in hist:
+                section = sorted_zip[running_total:running_total+sorted_chunk]
+                #print(section)
+                #temp = zip(*section)
+                #print(list(temp))
+                bin_a,bin_b,bin_c = zip(*section)
+                bin_accuracy.append(sklearn.metrics.accuracy_score(bin_b,bin_c))
+                running_total += sorted_chunk
+            plt.scatter(bin_edges[:-1],bin_accuracy)
+            plt.xlabel("A/sigma")
+            plt.ylabel("% Classification Accuracy")
+            plt.savefig('Percentage Accuracy in each bin, Model '+ str(model_name) + '.png')
+            plt.close()
 
     return output
 
